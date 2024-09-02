@@ -131,8 +131,8 @@ causalDT <- function(X, Y, Z,
     fit = student_fit_out$fit,
     X = X_train,
     y = tauhat,
-    B = B_stability,
     rpart_control = rpart_control,
+    B = B_stability,
     max_depth = max_depth_stability
   )
 

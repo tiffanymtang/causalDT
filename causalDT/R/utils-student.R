@@ -1,3 +1,4 @@
+#' @export
 get_rpart_paths <- function(rpart_fit) {
   leaf_node_ids <- rpart_fit$frame |>
     tibble::rownames_to_column("id") |>
@@ -5,10 +6,12 @@ get_rpart_paths <- function(rpart_fit) {
     dplyr::pull("id") |>
     as.numeric()
   subgroups <- rpart::path.rpart(rpart_fit, leaf_node_ids, print.it = FALSE) |>
-    purrr::map(~ setdiff(.x, "root"))
+    purrr::map(~ setdiff(.x, "root")) |>
+    purrr::compact()
   return(subgroups)
 }
 
+#' @export
 get_rpart_tree_info <- function(rpart_fit, digits = getOption("digits")) {
   out <- NULL
   splits <- rpart_fit$splits
@@ -47,7 +50,26 @@ get_rpart_tree_info <- function(rpart_fit, digits = getOption("digits")) {
       as.data.frame(splits, row.names = F)
     ) |>
       dplyr::filter(type == "main") |>
-      dplyr::rename(thr = index)
+      dplyr::rename(thr = index) |>
+      dplyr::mutate(
+        cat_thr = purrr::pmap_chr(
+          list(v = var, l = left),
+          function(v, l) {
+            if (grepl("[RL]", l)) {
+              l_split <- strsplit(l, "")[[1]]
+              R_idx <- which(l_split == "R")[1]
+              L_idx <- which(l_split == "L")[1]
+              if (R_idx < L_idx) {
+                th <- levels(X[[v]])[L_idx]
+              } else {
+                th <- levels(X[[v]])[R_idx]
+              }
+            } else {
+              return(NA)
+            }
+          }
+        )
+      )
   }
   return(out)
 }

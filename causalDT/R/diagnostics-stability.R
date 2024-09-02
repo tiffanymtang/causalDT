@@ -1,7 +1,7 @@
 #' @export
-evaluate_subgroup_stability <- function(estimator, fit, X, y,
-                                        B = 100,
+evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
                                         rpart_control = NULL,
+                                        B = 100,
                                         max_depth = NULL) {
 
   if (!("rpart" %in% class(fit))) {
@@ -34,8 +34,14 @@ evaluate_subgroup_stability <- function(estimator, fit, X, y,
       bootstrap_idx <- sample(1:nrow(X), size = nrow(X), replace = TRUE)
       X_b <- X[bootstrap_idx, , drop = FALSE]
       y_b <- y[bootstrap_idx]
-      fit_b <- estimator(X = X_b, y = y_b, fit_only = TRUE) |>
-        partykit::as.party()
+      if (is.null(Z)) {
+        fit_b <- estimator(X = X_b, y = y_b, fit_only = TRUE) |>
+          partykit::as.party()
+      } else {
+        Z_b <- Z[bootstrap_idx]
+        fit_b <- estimator(X = X_b, Y = y_b, Z = Z_b) |>
+          partykit::as.party()
+      }
       node_depths_b <- get_party_node_depths(fit_b)
       return(
         list(
