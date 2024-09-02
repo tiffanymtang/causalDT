@@ -44,8 +44,12 @@ causalDT <- function(X, Y, Z,
   if (identical(teacher_model, "causal_forest")) {
     teacher_model <- causal_forest
     teacher_predict <- predict_causal_forest
-    nfolds_crossfit <- 1
-    nreps_crossfit <- 1
+    if (is.null(nfolds_crossfit)) {
+      nfolds_crossfit <- 1
+    }
+    if (is.null(nreps_crossfit)) {
+      nreps_crossfit <- 1
+    }
   } else if (!is.function(teacher_model)) {
     stop("`teacher_model` must be a function or 'causal_forest'.")
   }
