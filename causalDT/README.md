@@ -2,6 +2,7 @@
 # causalDT
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/tiffanymtang/causalDT/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/tiffanymtang/causalDT/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 The goal of causalDT is to ...
