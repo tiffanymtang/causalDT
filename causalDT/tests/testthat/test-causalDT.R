@@ -1,7 +1,5 @@
 test_that("causalDT works", {
 
-  testthat::skip()
-
   n <- 100
   p <- 10
   X <- matrix(rnorm(n * p), nrow = n, ncol = p)

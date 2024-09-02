@@ -1,3 +1,6 @@
+#' Crossfit wrapper around estimators
+#'
+#' @keywords internal
 crossfit <- function(estimator, X, Y, Z, split_idxs, ...) {
   nfolds <- length(unique(split_idxs))
   fit_ls <- list()
@@ -23,6 +26,9 @@ crossfit <- function(estimator, X, Y, Z, split_idxs, ...) {
 }
 
 
+#' Predict method for cross-fitted estimators
+#'
+#' @keywords internal
 predict_crossfit <- function(fits, X, split_idxs, predict_fun) {
   nfolds <- length(unique(split_idxs))
   if (nfolds > 1) {

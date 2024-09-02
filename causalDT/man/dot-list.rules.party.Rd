@@ -2,12 +2,12 @@
 % Please edit documentation in R/utils-student.R
 \name{.list.rules.party}
 \alias{.list.rules.party}
-\title{Copied from https://github.com/cran/partykit/blob/98cd4c0d1c6775cf6b7f192105e26d57a5e8c061/R/party.R#L632
-because it's an internal function of partykit}
+\title{Get list of rules from a party model.}
 \usage{
 .list.rules.party(x, i = NULL, ...)
 }
 \description{
-Copied from https://github.com/cran/partykit/blob/98cd4c0d1c6775cf6b7f192105e26d57a5e8c061/R/party.R#L632
-because it's an internal function of partykit
+This is a copy of \code{partykit:::.list.rules.party()} that is exported for
+use in the causal distillation tree framework.
 }
+\keyword{internal}

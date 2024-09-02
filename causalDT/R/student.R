@@ -1,3 +1,23 @@
+#' Rpart wrapper for causal distillation trees.
+#'
+#' @description
+#' This function is a wrapper around \code{rpart::rpart()} that can be easily
+#' used as a student model in the causal distillation tree framework.
+#'
+#' @inheritParams shared_args
+#' @param method Same as \code{method} argument in \code{rpart::rpart()}.
+#'   Default is \code{"anova"}. See \code{rpart::rpart()} for more details.
+#' @param fit_only Logical. If \code{TRUE}, only the fitted model is returned.
+#'   Default is \code{FALSE}.
+#'
+#' @returns
+#' If \code{fit_only = TRUE}, the fitted model is returned. Otherwise, a list
+#' with the following components is returned:
+#' \item{fit}{Fitted model. An \code{rpart} model object.}
+#' \item{tree_info}{Data frame with tree structure/split information.}
+#' \item{subgroups}{List of subgroups given by their string representation.}
+#' \item{predictions}{Student model predictions for the given `X` data.}
+#'
 #' @export
 student_rpart <- function(X, y, method = "anova", rpart_control = NULL,
                           fit_only = FALSE) {
@@ -43,6 +63,51 @@ student_rpart <- function(X, y, method = "anova", rpart_control = NULL,
 }
 
 
+#' Subgroup CATE estimation.
+#'
+#' @description
+#' This function estimates the conditional average treatment effect for each
+#' subgroup given by the fitted decision tree. The conditional average
+#' treatment effect is estimated as the difference in the average outcome
+#' between treated and control units that fall within each subgroup (i.e.,
+#' each leaf node in the decision tree).
+#'
+#' @inheritParams shared_args
+#' @param fit Fitted subgroup model used to determine subgroup membership of
+#'   individuals. Typically, this is a `party` or `rpart` object, but any model
+#'   object that can be used to determine subgroup membership via
+#'   `predict(fit, x, type = 'node')` can be used.
+#'
+#' @returns
+#' Estimated subgroup average treatment effects tibble with the following columns:
+#' \item{leaf_id}{Leaf node identifier.}
+#' \item{subgroup}{String representation of the subgroup.}
+#' \item{estimate}{Estimated conditional average treatment effect for the subgroup.}
+#' \item{variance}{Asymptotic variance of the estimated conditional average treatment effect.}
+#' \item{.var1}{Sample variance for treated observations in the subgroup.}
+#' \item{.var0}{Sample variance for control observations in the subgroup.}
+#' \item{.n1}{Number of treated observations in the subgroup.}
+#' \item{.n0}{Number of control observations in the subgroup.}
+#' \item{.sample_idxs}{Indices of (holdout) observations in the subgroup.}
+#'
+#' @examples
+#' n <- 100
+#' p <- 5
+#' X <- matrix(rnorm(n * p), nrow = n, ncol = p)
+#' Z <- rbinom(n, 1, 0.5)
+#' Y <- 2 * Z * (X[, 1] > 0) + X[, 2] + rnorm(n, 0.1)
+#'
+#' # causal distillation tree output
+#' out <- causalDT(X, Y, Z)
+#' # compute subgroup CATEs manually
+#' group_cates <- estimate_group_cates(
+#'   out$student_fit$fit,
+#'   X = X[out$holdout_idxs, , drop = FALSE],
+#'   Y = Y[out$holdout_idxs],
+#'   Z = Z[out$holdout_idxs]
+#' )
+#' all.equal(out$estimate, group_cates)
+#'
 #' @export
 estimate_group_cates <- function(fit, X, Y, Z) {
   if (!is.null(fit)) {

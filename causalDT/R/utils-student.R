@@ -1,3 +1,15 @@
+#' Get decision paths from an rpart model.
+#'
+#' @description
+#' Return the decision paths for each leaf node in an `rpart` model as character
+#' strings.
+#'
+#' @inheritParams shared_args
+#'
+#' @returns
+#' A list of character vectors, where each element corresponds to the decision
+#' path for a leaf node in the `rpart_fit` model.
+#'
 #' @export
 get_rpart_paths <- function(rpart_fit) {
   leaf_node_ids <- rpart_fit$frame |>
@@ -11,6 +23,18 @@ get_rpart_paths <- function(rpart_fit) {
   return(subgroups)
 }
 
+
+#' Get split information from an rpart model.
+#'
+#' @description
+#' Return the split information for each node in an `rpart` model as a data frame.
+#'
+#' @inheritParams shared_args
+#' @param digits Number of digits to round the split values to.
+#'
+#' @returns A data.frame with information regarding the feature/threshold used
+#'   for each split in the `rpart` model.
+#'
 #' @export
 get_rpart_tree_info <- function(rpart_fit, digits = getOption("digits")) {
   out <- NULL
@@ -74,8 +98,14 @@ get_rpart_tree_info <- function(rpart_fit, digits = getOption("digits")) {
   return(out)
 }
 
-#' Copied from https://github.com/cran/partykit/blob/98cd4c0d1c6775cf6b7f192105e26d57a5e8c061/R/party.R#L632
-#' because it's an internal function of partykit
+
+#' Get list of rules from a party model.
+#'
+#' @description
+#' This is a copy of \code{partykit:::.list.rules.party()} that is exported for
+#' use in the causal distillation tree framework.
+#'
+#' @keywords internal
 .list.rules.party <- function(x, i = NULL, ...) {
   if (is.null(i)) {
     i <- partykit::nodeids(x, terminal = TRUE)
@@ -148,6 +178,20 @@ get_rpart_tree_info <- function(rpart_fit, digits = getOption("digits")) {
   paste(rule, collapse = " & ")
 }
 
+
+#' Get decision paths from a party model.
+#'
+#' @description
+#' Return the decision paths for each leaf node in a `party` model as character
+#' strings.
+#'
+#' @inheritParams shared_args
+#'
+#' @returns
+#' A list of character vectors, where each element corresponds to the decision
+#' path for a leaf node in the `party_fit` model.
+#'
+#' @keywords internal
 get_party_paths <- function(party_fit) {
   purrr::map(
     .list.rules.party(party_fit),
@@ -161,6 +205,12 @@ get_party_paths <- function(party_fit) {
     )
 }
 
+
+#' Get depth of each node in a party model.
+#'
+#' @inheritParams shared_args
+#'
+#' @keywords internal
 get_party_node_depths <- function(party_fit) {
   printed_tree <- capture.output(party_fit)
   id_counter <- 1

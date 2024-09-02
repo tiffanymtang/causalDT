@@ -1,22 +1,21 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
+//' Jaccard similarity index
+//'
+//' @description
+//' This function computes the Jaccard similarity index between two vectors of
+//' cluster membership labels.
+//'
+//' @param x Numeric vector of cluster memberships (encoded as integers).
+//' @param y Numeric vector of cluster memberships (encoded as integers).
+//'
+//' @return Computed Jaccard similarity metric according to Ben-Hur (2001).
+//'
+//' @export
 // [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
 double jaccardCPP(NumericVector x, NumericVector y) {
-  // jaccardCPP: Evaluate the Jaccard similarity between two vectors of cluster
-  // labels (C++ version)
-  //
-  // Inputs:
-  // x = numeric vector of cluster memberships (encoded as integers) from one
-  //     subsample of the data
-  // y = numeric vector of cluster memberships (encoded as integers) from
-  //     another subsample of the data
-  //
-  // Outputs:
-  // sim = computed similarity metric according to Ben-Hur (2001);
-  //       scalar quantity (double)
-
   // length of x vector; number of samples
   int n = x.size();
 

@@ -1,3 +1,48 @@
+#' Subgroup stability diagnostics
+#'
+#' @description TODO
+#'
+#' @inheritParams shared_args
+#'
+#' @param estimator Function used to estimate subgroups of individuals and their
+#'   corresponding estimated treatment effects. The function should take in
+#'   `X`, `y`, and optionally `Z` (if input is not \code{NULL}) and return a
+#'   model fit (e.g,. output of `rpart`) that can be coerced into a `party`
+#'   object via \code{partykit::as_party()}. Typically, \code{student_rpart}
+#'   will be used as the `estimator`.
+#' @param fit Fitted subgroup model (often, the output of `estimator()`). Mainly
+#'   used to determine an appropriate `max_depth` for the stability diagnostics.
+#'   If `fit` is not an `rpart` object, stability diagnostics will be skipped.
+#' @param B Number of bootstrap samples to use in evaluating stability
+#'   diagnostics. Default is 100.
+#' @param max_depth Maximum depth of the tree to consider when evaluating
+#'   stability diagnostics. If \code{NULL}, the default is
+#'   max(4, max depth of `fit`).
+#'
+#' @returns A list with the following elements:
+#' \item{jaccard_mean}{Vector of mean Jaccard similarity index for each tree depth. The tree depth is given by the vector index.}
+#' \item{jaccard_distribution}{List of Jaccard similarity indices across all bootstraps for each tree depth.}
+#' \item{bootstrap_predictions}{List of mean student model predictions (for training (non-holdout) data) across all bootstraps for each tree depth.}
+#' \item{bootstrap_predictions_var}{List of variance of student model predictions (for training (non-holdout) data) across all bootstraps for each tree depth.}
+#' \item{leaf_ids}{List of leaf node identifiers, indicating the leaf membership of each training sample in the (original) fitted student model.}
+#'
+#' @examples
+#' n <- 200
+#' p <- 10
+#' X <- matrix(rnorm(n * p), nrow = n, ncol = p)
+#' Z <- rbinom(n, 1, 0.5)
+#' Y <- 2 * Z * (X[, 1] > 0) + X[, 2] + rnorm(n, 0.1)
+#'
+#' # run causal distillation trees without stability diagnostics
+#' out <- causalDT(X, Y, Z, B_stability = 0)
+#' # run stability diagnostics manually
+#' stability_out <- evaluate_subgroup_stability(
+#'   estimator = student_rpart,
+#'   fit = out$student_fit$fit,
+#'   X = X[-out$holdout_idxs, , drop = FALSE],
+#'   y = out$student_fit$predictions
+#' )
+#'
 #' @export
 evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
                                         rpart_control = NULL,
@@ -6,7 +51,7 @@ evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
 
   if (!("rpart" %in% class(fit))) {
     warning(
-      "Estimator is not an rpart object. ",
+      "fit is not an rpart object. ",
       "Stability diagnostics have only been implemented for the rpart student model. ",
       "Skipping stability diagnostics."
     )
