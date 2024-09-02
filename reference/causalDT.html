@@ -41,8 +41,8 @@
 <span>  <span class="va">X</span>,</span>
 <span>  <span class="va">Y</span>,</span>
 <span>  <span class="va">Z</span>,</span>
-<span>  holdout_idxs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  holdout_prop <span class="op">=</span> <span class="fl">0.3</span>,</span>
+<span>  holdout_idxs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  teacher_model <span class="op">=</span> <span class="st">"causal_forest"</span>,</span>
 <span>  teacher_predict <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  student_model <span class="op">=</span> <span class="st">"rpart"</span>,</span>
@@ -71,34 +71,152 @@
 <dd><p>A vector of treatments.</p></dd>
 
 
+<dt id="arg-holdout-prop">holdout_prop<a class="anchor" aria-label="anchor" href="#arg-holdout-prop"></a></dt>
+<dd><p>Proportion of data to hold out for honest estimation of
+treatment effects. Used only if <code>holdout_idxs</code> is NULL.</p></dd>
+
+
 <dt id="arg-holdout-idxs">holdout_idxs<a class="anchor" aria-label="anchor" href="#arg-holdout-idxs"></a></dt>
-<dd><p>A vector of indices to hold out for honest estimate of
+<dd><p>A vector of indices to hold out for honest estimation of
 treatment effects. If NULL, a holdout set of size <code>holdout_prop</code> x nrow(X)
 is randomly selected.</p></dd>
 
 
-<dt id="arg-holdout-prop">holdout_prop<a class="anchor" aria-label="anchor" href="#arg-holdout-prop"></a></dt>
-<dd><p>Proportion of data to hold out for honest estimate of
-treatment effects. Used only if <code>holdout_idxs</code> is NULL.</p></dd>
-
-
 <dt id="arg-teacher-model">teacher_model<a class="anchor" aria-label="anchor" href="#arg-teacher-model"></a></dt>
-<dd><p>A function that takes in the named arguments <code>X</code>, <code>Y</code>,
-<code>Z</code>, and (optional) additional arguments and returns a model object that
-can be used to predict individual-level treatment effects using
-<code>teacher_predict(teacher_model, data)</code>.</p></dd>
+<dd><p>Teacher model used to estimate individual-level
+treatment events. Should be either "causal_forest" (default) or a function.
+If "causal_forest", <code><a href="https://rdrr.io/pkg/grf/man/causal_forest.html" class="external-link">grf::causal_forest()</a></code> is used as the teacher
+model. Otherwise, the function should take in the named arguments
+<code>X</code>, <code>Y</code>, <code>Z</code>, (corresponding to the covariates, outcome, and treatment
+data, respectively) as well as (optional) additional arguments passed to
+the function via <code>...</code>. Moreover, the function should return a model object
+that can be used to predict individual-level treatment effects using
+<code>teacher_predict(teacher_model, x)</code>.</p></dd>
+
+
+<dt id="arg-teacher-predict">teacher_predict<a class="anchor" aria-label="anchor" href="#arg-teacher-predict"></a></dt>
+<dd><p>Function used to predict individual-level treatment
+effects from the teacher model. Should take in two arguments. as input: the
+first being the model object returned by <code>teacher_model</code>, and the second
+being a tibble, data.frame, or matrix of covariates. If <code>NULL</code>, the
+default is <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code>.</p></dd>
+
+
+<dt id="arg-student-model">student_model<a class="anchor" aria-label="anchor" href="#arg-student-model"></a></dt>
+<dd><p>Student model used to estimate subgroups of individuals
+and their corresponding estimated treatment effects. Should be either
+"rpart" (default) or a function. If "rpart", <code><a href="https://rdrr.io/pkg/rpart/man/rpart.html" class="external-link">rpart::rpart()</a></code> is used.
+Otherwise, the function should take in two arguments as input: the first
+being a tibble, data.frame, or matrix of covariates, and the second being a
+vector of predicted individual-level treatment effects. Moreover, the
+function should return a list. At a minimum, this list should contain one
+element named <code>fit</code> that is a model object that can be used to output the
+leaf membership indices for each observation via
+<code>predict(student_model, x, type = 'node')</code>. In general, we recommend
+using the default "rpart".</p></dd>
 
 
 <dt id="arg-rpart-control">rpart_control<a class="anchor" aria-label="anchor" href="#arg-rpart-control"></a></dt>
-<dd><p>A list of control parameters for the rpart function.
-See <code>? rpart.control</code> for details.</p></dd>
+<dd><p>A list of control parameters for the <code>rpart</code> algorithm.
+See <code>? rpart.control</code> for details. Used only if <code>student_model</code> is "rpart".</p></dd>
 
 
 <dt id="arg-nfolds-crossfit">nfolds_crossfit<a class="anchor" aria-label="anchor" href="#arg-nfolds-crossfit"></a></dt>
-<dd><p>Number of folds for crossfitting.</p></dd>
+<dd><p>Number of folds in cross-fitting procedure.
+If <code>teacher_model</code> is "causal_forest", the default is 1 (no cross-fitting
+is performed). Otherwise, the default is 2 (one fold for training the
+teacher model and one fold for estimating the individual-level treatment effects).</p></dd>
+
+
+<dt id="arg-nreps-crossfit">nreps_crossfit<a class="anchor" aria-label="anchor" href="#arg-nreps-crossfit"></a></dt>
+<dd><p>Number of repetitions of the cross-fitting procedure.
+If <code>teacher_model</code> is "causal_forest", the default is 1 (no cross-fitting
+is performed). Otherwise, the default is 50.</p></dd>
+
+
+<dt id="arg-b-stability">B_stability<a class="anchor" aria-label="anchor" href="#arg-b-stability"></a></dt>
+<dd><p>Number of bootstrap samples to use in evaluating stability
+diagnostics. Default is 100. Stability diagnostics are only performed if
+<code>student_model</code> is an <code>rpart</code> object. If <code>B_stability</code> is 0, no stability
+diagnostics are performed.</p></dd>
+
+
+<dt id="arg-max-depth-stability">max_depth_stability<a class="anchor" aria-label="anchor" href="#arg-max-depth-stability"></a></dt>
+<dd><p>Maximum depth of the decision tree used in
+evaluating stability diagnostics. If <code>NULL</code>, the default is
+max(4, max depth of fitted student model).</p></dd>
+
+
+<dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
+<dd><p>Additional arguments passed to the <code>teacher_model</code> function.</p></dd>
+
+</dl></div>
+    <div class="section level2">
+    <h2 id="value">Value<a class="anchor" aria-label="anchor" href="#value"></a></h2>
+    <p>A list with the following elements:</p>
+<dl><dt>estimate</dt>
+<dd><p>Estimated subgroup average treatment effects tibble with the following columns:</p><ul><li><p>leaf_id - Leaf node identifier.</p></li>
+<li><p>subgroup - String representation of the subgroup.</p></li>
+<li><p>estimate - Estimated conditional average treatment effect for the subgroup.</p></li>
+<li><p>variance - Asymptotic variance of the estimated conditional average treatment effect.</p></li>
+<li><p>.var1 - Sample variance for treated observations in the subgroup.</p></li>
+<li><p>.var0 - Sample variance for control observations in the subgroup.</p></li>
+<li><p>.n1 - Number of treated observations in the subgroup.</p></li>
+<li><p>.n0 - Number of control observations in the subgroup.</p></li>
+<li><p>.sample_idxs - Indices of (holdout) observations in the subgroup.</p></li>
+</ul></dd>
+
+<dt>student_fit</dt>
+<dd><p>Output of <code>student_model()</code>, which can vary. If
+<code>student_model</code> is "rpart", the output is a list with the following elements:</p><ul><li><p>fit - The fitted student model. An <code>rpart</code> model object.</p></li>
+<li><p>tree_info - A data.frame with the tree structure/split information.</p></li>
+<li><p>subgroups - A list of subgroups given by their string representation.</p></li>
+<li><p>predictions - Student model predictions for the training (non-holdout) data.</p></li>
+</ul></dd>
+
+<dt>teacher_fit</dt>
+<dd><p>A list of (cross-fitted) teacher model fits.</p></dd>
+
+<dt>teacher_predictions</dt>
+<dd><p>The predicted individual-level treatment effects, averaged across all cross-fitted teacher model.</p></dd>
+
+<dt>teacher_predictions_ls</dt>
+<dd><p>A list of predicted individual-level treatment effects from each (cross-fitted) teacher model fit.</p></dd>
+
+<dt>crossfit_idxs_ls</dt>
+<dd><p>A list of fold indices used in each cross-fit.</p></dd>
+
+<dt>stability_diagnostics</dt>
+<dd><p>A list of stability diagnostics with the following elements:</p><ul><li><p>jaccard_mean - Vector of mean Jaccard similarity index for each tree depth. The tree depth is given by the vector index.</p></li>
+<li><p>jaccard_distribution - List of Jaccard similarity indices across all bootstraps for each tree depth.</p></li>
+<li><p>bootstrap_predictions - List of mean student model predictions (for training (non-holdout) data) across all bootstraps for each tree depth.</p></li>
+<li><p>bootstrap_predictions_var - List of variance of student model predictions (for training (non-holdout) data) across all bootstraps for each tree depth.</p></li>
+<li><p>leaf_ids - List of leaf node identifiers, indicating the leaf membership of each training sample in the (original) fitted student model.</p></li>
+</ul></dd>
+
+<dt>holdout_idxs</dt>
+<dd><p>Indices of the holdout set.</p></dd>
 
 </dl></div>
 
+    <div class="section level2">
+    <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
+    <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="va">n</span> <span class="op">&lt;-</span> <span class="fl">100</span></span></span>
+<span class="r-in"><span><span class="va">p</span> <span class="op">&lt;-</span> <span class="fl">5</span></span></span>
+<span class="r-in"><span><span class="va">X</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">matrix</a></span><span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span> <span class="op">*</span> <span class="va">p</span><span class="op">)</span>, nrow <span class="op">=</span> <span class="va">n</span>, ncol <span class="op">=</span> <span class="va">p</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">Z</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/stats/Binomial.html" class="external-link">rbinom</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">1</span>, <span class="fl">0.5</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="fl">2</span> <span class="op">*</span> <span class="va">Z</span> <span class="op">*</span> <span class="op">(</span><span class="va">X</span><span class="op">[</span>, <span class="fl">1</span><span class="op">]</span> <span class="op">&gt;</span> <span class="fl">0</span><span class="op">)</span> <span class="op">+</span> <span class="va">X</span><span class="op">[</span>, <span class="fl">2</span><span class="op">]</span> <span class="op">+</span> <span class="fu"><a href="https://rdrr.io/r/stats/Normal.html" class="external-link">rnorm</a></span><span class="op">(</span><span class="va">n</span>, <span class="fl">0.1</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="co"># causal distillation trees using causal forest teacher model</span></span></span>
+<span class="r-in"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">causalDT</span><span class="op">(</span><span class="va">X</span>, <span class="va">Y</span>, <span class="va">Z</span><span class="op">)</span></span></span>
+<span class="r-in"><span></span></span>
+<span class="r-in"><span><span class="kw">if</span> <span class="op">(</span><span class="cn">FALSE</span><span class="op">)</span> <span class="op">{</span> <span class="co"># \dontrun{</span></span></span>
+<span class="r-in"><span><span class="co"># causal distillation trees using rboost teacher model</span></span></span>
+<span class="r-in"><span><span class="va">out</span> <span class="op">&lt;-</span> <span class="fu">causalDT</span><span class="op">(</span><span class="va">X</span>, <span class="va">Y</span>, <span class="va">Z</span>, teacher_model <span class="op">=</span> <span class="va">rboost</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="op">}</span> <span class="co"># }</span></span></span>
+<span class="r-in"><span></span></span>
+</code></pre></div>
+    </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside></div>
 
