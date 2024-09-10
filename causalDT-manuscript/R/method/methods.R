@@ -272,14 +272,31 @@ linear_reg_subgroups <- function(X, Y, Z, max_int = 1,
 
   # Step 1: Fit a linear regression
   df <- data.frame(X, Z, Y)
+  df1 <- df |>
+    dplyr::mutate(Z = 1)
+  df0 <- df |>
+    dplyr::mutate(Z = 0)
   formula <- get_interaction_formula(df, max_int)
   fit <- lm(formula, data = df)
-  tauhat <- predict(fit)
+  tauhat <- predict(fit, df1) - predict(fit, df0)
 
   # Step 2: Extract subgroups from linear regression
   tidy_fit <- tidy_lm(fit)
   model_info <- get_lm_info(tidy_fit)
   subgroups <- get_lm_subgroups(tidy_fit)
+
+  # evaluate CATE
+  group_cates <- tibble::tibble(
+    estimate = tauhat,
+    Z = Z
+  ) |>
+    dplyr::group_by(estimate) |>
+    dplyr::summarise(
+      .n1 = sum(Z == 1),
+      .n0 = sum(Z == 0),
+      .sample_idxs = list(dplyr::cur_group_rows()),
+      .groups = "drop"
+    )
   end_time <- Sys.time()
 
   out <- c(
@@ -287,6 +304,7 @@ linear_reg_subgroups <- function(X, Y, Z, max_int = 1,
       fit = fit,
       model_info = model_info,
       subgroups = subgroups,
+      group_cates = group_cates,
       teacher_predictions = tauhat,
       student_predictions = rep(NA_real_, length(tauhat)),  # dummy placeholder for now
       time_elapsed = as.numeric(difftime(end_time, start_time, units = "secs")),
@@ -307,18 +325,37 @@ lasso_reg_subgroups <- function(X, Y, Z, max_int = 1,
 
   # Step 1: Fit Lasso
   df <- data.frame(X, Z, Y)
+  df1 <- df |>
+    dplyr::mutate(Z = 1)
+  df0 <- df |>
+    dplyr::mutate(Z = 0)
   formula <- get_interaction_formula(df, max_int)
   Xmat <- model.matrix(formula, df)[, -1] # remove intercept
+  Xmat1 <- model.matrix(formula, df1)[, -1]
+  Xmat0 <- model.matrix(formula, df0)[, -1]
   fit <- do.call(
     glmnet::cv.glmnet,
     args = c(list(x = Xmat, y = Y, alpha = 1), glmnet_args)
   )
-  tauhat <- c(predict(fit, Xmat))
+  tauhat <- c(predict(fit, Xmat1)) - c(predict(fit, Xmat0))
 
   # Step 2: Extract subgroups from Lasso
   tidy_fit <- tidy_glmnet(fit)
   model_info <- get_lm_info(tidy_fit)
   subgroups <- get_lm_subgroups(tidy_fit)
+
+  # evaluate CATE
+  group_cates <- tibble::tibble(
+    estimate = tauhat,
+    Z = Z
+  ) |>
+    dplyr::group_by(estimate) |>
+    dplyr::summarise(
+      .n1 = sum(Z == 1),
+      .n0 = sum(Z == 0),
+      .sample_idxs = list(dplyr::cur_group_rows()),
+      .groups = "drop"
+    )
   end_time <- Sys.time()
 
   out <- c(
