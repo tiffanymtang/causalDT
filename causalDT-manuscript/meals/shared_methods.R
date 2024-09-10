@@ -1,4 +1,4 @@
-### Distillation methods ####
+### Main Distillation Methods ####
 NREPS_CROSSFIT <- 50
 
 # without stability diagnostics
@@ -42,7 +42,25 @@ distilled_rlasso_stability_method <- create_method(
   B_stability = 100
 )
 
-#### Causal tree methods ####
+distilled_rboost_no_crossfit_stability_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Rboost (no crossfit)",
+  teacher_model = causalDT::rboost,
+  B_stability = 100,
+  nfolds_crossfit = 1,
+  nreps_crossfit = 1
+)
+
+distilled_rlasso_no_crossfit_stability_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Rlasso (no crossfit)",
+  teacher_model = causalDT::rlasso,
+  B_stability = 100,
+  nfolds_crossfit = 1,
+  nreps_crossfit = 1
+)
+
+#### Causal Tree Methods ####
 causal_tree_method <- create_method(
   .method_fun = causal_tree,
   .name = "Causal Tree (pruned)"
@@ -81,4 +99,79 @@ lm_method <- create_method(
 lasso_method <- create_method(
   .method_fun = lasso_reg_subgroups,
   .name = "Lasso"
+)
+
+#### Distillation Methods with varying # crossfits ####
+distilled_causal_forest_no_crossfit_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (no crossfit)",
+  teacher_model = "causal_forest",
+  nfolds_crossfit = 1,
+  nreps_crossfit = 1
+)
+
+distilled_rboost_no_crossfit_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Rboost (no crossfit)",
+  teacher_model = causalDT::rboost,
+  nfolds_crossfit = 1,
+  nreps_crossfit = 1
+)
+
+distilled_rlasso_no_crossfit_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Rlasso (no crossfit)",
+  teacher_model = causalDT::rlasso,
+  nfolds_crossfit = 1,
+  nreps_crossfit = 1
+)
+
+
+distilled_causal_forest_crossfit_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (crossfit)",
+  teacher_model = "causal_forest",
+  nfolds_crossfit = 2,
+  nreps_crossfit = 1
+)
+
+distilled_rboost_crossfit_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Rboost (crossfit)",
+  teacher_model = causalDT::rboost,
+  nfolds_crossfit = 2,
+  nreps_crossfit = 1
+)
+
+distilled_rlasso_crossfit_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Rlasso (crossfit)",
+  teacher_model = causalDT::rlasso,
+  nfolds_crossfit = 2,
+  nreps_crossfit = 1
+)
+
+#### Stump Methods for Theory Sims ####
+distilled_causal_forest_stump_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (stump)",
+  teacher_model = "causal_forest",
+  rpart_control = list(maxdepth = 1)
+)
+
+causal_tree_stump_method <- create_method(
+  .method_fun = causal_tree,
+  .name = "Causal Tree (stump)",
+  causaltree_args = list(
+    split.Rule = "CT",
+    cv.option = "CT",
+    split.Honest = TRUE,
+    cv.Honest = TRUE,
+    split.Bucket = FALSE,
+    xval = 5,
+    cp = 0,
+    minsize = 1,
+    propensity = 0.5,
+    maxdepth = 1
+  )
 )

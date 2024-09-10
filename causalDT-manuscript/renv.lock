@@ -1439,6 +1439,24 @@
       ],
       "Hash": "673cb53962e9932ffeb50bf20be0b732"
     },
+    "patchwork": {
+      "Package": "patchwork",
+      "Version": "1.2.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "cli",
+        "ggplot2",
+        "grDevices",
+        "graphics",
+        "grid",
+        "gtable",
+        "rlang",
+        "stats",
+        "utils"
+      ],
+      "Hash": "9c8ab14c00ac07e9e04d1664c0b74486"
+    },
     "pillar": {
       "Package": "pillar",
       "Version": "1.9.0",
@@ -2220,9 +2238,9 @@
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "vthemes",
       "RemoteUsername": "Yu-Group",
-      "RemoteRef": "HEAD",
+      "RemoteRepo": "vthemes",
+      "RemoteRef": "main",
       "RemoteSha": "cd7fc64523ad7f2441a67fcfa6a12897e8c18282",
       "Requirements": [
         "DT",
@@ -2243,7 +2261,7 @@
         "viridis",
         "viridisLite"
       ],
-      "Hash": "9983718303c4de6885cc30c7996dee63"
+      "Hash": "da28223d1befccd1a8494262107fdd82"
     },
     "waldo": {
       "Package": "waldo",

@@ -64,6 +64,7 @@ generate_subgroup_dgp <- function(n = 2000,
 
 # Real world data
 rwd_dgp <- function(name, subsample = 1, permute = FALSE) {
+
   if (stringr::str_starts(name, "aids")) {
     data <- speff2trial::ACTG175 |>
       dplyr::filter(arms %in% c(0, 2))
@@ -74,7 +75,7 @@ rwd_dgp <- function(name, subsample = 1, permute = FALSE) {
     vars_all <- c(
       "age", "wtkg", "hemo", "homo", "drugs", "karnof", "race", "gender",
       "symptom", "preanti", "strat", "str2", "oprior", "z30", "zprior",
-      "cd80"#, "cd40"
+      "cd80"
     )
     if (name == "aids_full") {
       X <- data |>
@@ -84,13 +85,6 @@ rwd_dgp <- function(name, subsample = 1, permute = FALSE) {
         dplyr::select(
           tidyselect::all_of(
             setdiff(vars_all, c("str2", "oprior", "z30", "zprior"))
-          )
-        )
-    } else if (name == "aids_strat") {
-      X <- data |>
-        dplyr::select(
-          tidyselect::all_of(
-            setdiff(vars_all, c("str2", "oprior", "z30", "zprior", "preanti"))
           )
         )
     }
