@@ -159,10 +159,24 @@ evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
       apply(1, var)
   }
 
+  feature_dist <- purrr::map(
+    bootstrap_fits, ~ get_party_node_depths(.x, return_features = TRUE)
+  ) |>
+    dplyr::bind_rows(.id = "bootstrap_idx") |>
+    dplyr::filter(
+      !is.na(feature)
+    ) |>
+    dplyr::group_by(depth, feature) |>
+    dplyr::summarise(
+      freq = dplyr::n()
+    ) |>
+    dplyr::ungroup()
+
   leaf_ids_orig <- predict(fit_orig, data.frame(X), type = "node")
   out <- list(
     "jaccard_mean" = sapply(Js, mean),
     "jaccard_distribution" = Js,
+    "feature_distribution" = feature_dist,
     "bootstrap_predictions_mean" = preds_mean,
     "bootstrap_predictions_var" = preds_var,
     "leaf_ids" = leaf_ids_orig

@@ -372,9 +372,9 @@
       "Package": "causalDT",
       "Version": "0.0.0.9000",
       "Source": "Local",
-      "Remotes": "xnie/rlearner",
       "RemoteType": "local",
-      "RemoteUrl": "/Users/ttang4/Documents/Research/Causal Subgroups/causalDT/causalDT",
+      "RemoteUrl": "../causalDT",
+      "Remotes": "xnie/rlearner",
       "Requirements": [
         "Rcpp",
         "RcppArmadillo",
@@ -388,7 +388,7 @@
         "tibble",
         "tidyselect"
       ],
-      "Hash": "90b70a02f05347244bed3cd8de157796"
+      "Hash": "1dae80a01b44163cb5fb9bb31ecb38f8"
     },
     "causalTree": {
       "Package": "causalTree",
@@ -1002,6 +1002,21 @@
       ],
       "Hash": "d55aa087c47a63ead0f6fc10f8fa1ee0"
     },
+    "httr": {
+      "Package": "httr",
+      "Version": "1.4.7",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "R6",
+        "curl",
+        "jsonlite",
+        "mime",
+        "openssl"
+      ],
+      "Hash": "ac107251d9d9fd72f0ca8049988f1d7f"
+    },
     "httr2": {
       "Package": "httr2",
       "Version": "1.0.3",
@@ -1521,6 +1536,38 @@
       ],
       "Hash": "2ec30ffbeec83da57655b850cf2d3e0e"
     },
+    "plotly": {
+      "Package": "plotly",
+      "Version": "4.10.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "RColorBrewer",
+        "base64enc",
+        "crosstalk",
+        "data.table",
+        "digest",
+        "dplyr",
+        "ggplot2",
+        "htmltools",
+        "htmlwidgets",
+        "httr",
+        "jsonlite",
+        "lazyeval",
+        "magrittr",
+        "promises",
+        "purrr",
+        "rlang",
+        "scales",
+        "tibble",
+        "tidyr",
+        "tools",
+        "vctrs",
+        "viridisLite"
+      ],
+      "Hash": "a1ac5c03ad5ad12b9d1597e00e23c3dd"
+    },
     "plyr": {
       "Package": "plyr",
       "Version": "1.8.9",
@@ -1742,9 +1789,9 @@
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteRepo": "rlearner",
       "RemoteUsername": "xnie",
-      "RemoteRef": "HEAD",
+      "RemoteRepo": "rlearner",
+      "RemoteRef": "master",
       "RemoteSha": "6806396960e672214e2ef36e16c76bbb58ef9114",
       "Requirements": [
         "R",
@@ -1755,7 +1802,7 @@
         "stringr",
         "xgboost"
       ],
-      "Hash": "601acf0c027ab9d320a444c607196498"
+      "Hash": "1d0f699a4943a42d12351d300b5f308b"
     },
     "rmarkdown": {
       "Package": "rmarkdown",

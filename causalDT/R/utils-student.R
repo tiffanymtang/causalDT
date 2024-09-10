@@ -211,16 +211,34 @@ get_party_paths <- function(party_fit) {
 #' @inheritParams shared_args
 #'
 #' @keywords internal
-get_party_node_depths <- function(party_fit) {
+get_party_node_depths <- function(party_fit, return_features = FALSE) {
   printed_tree <- capture.output(party_fit)
   id_counter <- 1
   depths <- rep(NA, length(party_fit))
   names(depths) <- 1:length(party_fit)
+  features <- rep(NA, length(party_fit))
+  names(features) <- 1:length(party_fit)
   for (idx in seq_along(printed_tree)) {
     if (grepl("\\[[0-9]+\\]", printed_tree[idx])) {
       depths[id_counter] <- stringr::str_count(printed_tree[idx], "\\|")
+      if (return_features) {
+        features[id_counter] <- stringr::str_extract(
+          printed_tree[idx],
+          "(?<=\\]).*?(?=<|>)"
+        ) |>
+          stringr::str_trim()
+      }
       id_counter <- id_counter + 1
     }
   }
-  return(depths)
+  if (return_features) {
+    return(
+      tibble::tibble(
+        depth = depths,
+        feature = features
+      )
+    )
+  } else {
+    return(depths)
+  }
 }

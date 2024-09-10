@@ -90,7 +90,7 @@ eval_subgroup_thresholds <- function(fit_results,
 
   subgroup_thresholds <- function(data) {
     model_info <- data[["model_info"]][[1]]
-    if (length(purrr::flatten(data[["true_thresholds"]])) == 1) {
+    if (length(unlist(data[["true_thresholds"]])) == 1) {
       true_vars <- names(data[["true_thresholds"]])
     } else {
       true_vars <- names(data[["true_thresholds"]][[1]])
