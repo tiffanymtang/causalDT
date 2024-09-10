@@ -363,6 +363,7 @@ lasso_reg_subgroups <- function(X, Y, Z, max_int = 1,
       fit = fit,
       model_info = model_info,
       subgroups = subgroups,
+      group_cates = group_cates,
       teacher_predictions = tauhat,
       student_predictions = rep(NA_real_, length(tauhat)),  # dummy placeholder for now
       time_elapsed = as.numeric(difftime(end_time, start_time, units = "secs")),
