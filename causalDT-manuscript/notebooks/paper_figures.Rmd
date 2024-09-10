@@ -227,12 +227,12 @@ for (sim_name in sim_names) {
   plt_nsplits <- viz_results$`Number of Splits Plot` +
     ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
     viridis::scale_fill_viridis(
-      begin = 0.15, end = 0.95, option = "magma", limits = c(0., 7)
+      begin = 0.05, end = 1, option = "magma", limits = c(0., 7)
     )
   plt_ntrees <- viz_results$`Number of Trees Plot` +
     ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
     viridis::scale_fill_viridis(
-      begin = 0.15, end = 0.95, option = "magma", limits = c(0, 100)
+      begin = 0.05, end = 1, option = "magma", limits = c(0, 100)
     )
   plt <- patchwork::wrap_plots(
     plt_ntrees, plt_nsplits, nrow = 1
@@ -611,14 +611,3 @@ ggplot2::ggsave(
   width = 11
 )
 ```
-
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
