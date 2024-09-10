@@ -209,6 +209,8 @@ get_party_paths <- function(party_fit) {
 #' Get depth of each node in a party model.
 #'
 #' @inheritParams shared_args
+#' @param return_features Logical indicating whether to return the feature
+#'   associated with each node.
 #'
 #' @keywords internal
 get_party_node_depths <- function(party_fit, return_features = FALSE) {

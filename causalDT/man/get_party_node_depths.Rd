@@ -4,10 +4,13 @@
 \alias{get_party_node_depths}
 \title{Get depth of each node in a party model.}
 \usage{
-get_party_node_depths(party_fit)
+get_party_node_depths(party_fit, return_features = FALSE)
 }
 \arguments{
 \item{party_fit}{A \code{party} object.}
+
+\item{return_features}{Logical indicating whether to return the feature
+associated with each node.}
 }
 \description{
 Get depth of each node in a party model.
