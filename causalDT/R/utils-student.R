@@ -63,12 +63,14 @@ get_rpart_tree_info <- function(rpart_fit, digits = getOption("digits")) {
         paste(c("L", "-", "R")[catside], collapse = "", sep = "")
       }
     }
+    nodeids <- rep(as.integer(row.names(ff)), times = nn)
     out <- cbind(
       data.frame(
         var = rownames(splits),
         type = type,
-        node = rep(as.integer(row.names(ff)), times = nn),
+        node = nodeids,
         ix = rep(seq_len(nrow(ff)), nn),
+        depth = trunc(log(nodeids, base = 2)) + 1,
         left = left
       ),
       as.data.frame(splits, row.names = F)

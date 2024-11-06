@@ -20,7 +20,8 @@
 #'
 #' @export
 student_rpart <- function(X, y, method = "anova", rpart_control = NULL,
-                          fit_only = FALSE) {
+                          prune = c("none", "min", "1se"), fit_only = FALSE) {
+  prune <- match.arg(prune)
   df <- data.frame(X, y)
 
   # if tauhat is constant, return NULL model (no subgroups)
@@ -45,6 +46,23 @@ student_rpart <- function(X, y, method = "anova", rpart_control = NULL,
         y ~ ., data = df, method = method, control = rpart_control
       )
     }
+
+    # pruning
+    if (prune != "none") {
+      best_cp <- as.data.frame(fit$cptable) |>
+        dplyr::filter(xerror == min(xerror, na.rm = TRUE)) |>
+        dplyr::slice(1)
+      if (prune == "min") {
+        fit <- rpart::prune(fit, cp = best_cp$CP)
+      } else if (prune == "1se") {
+        best1se_cp <- as.data.frame(fit$cptable) |>
+          dplyr::filter(xerror <= (best_cp$xerror + best_cp$xstd)) |>
+          dplyr::filter(nsplit == min(nsplit, na.rm = TRUE)) |>
+          dplyr::slice(1)
+        fit <- rpart::prune(fit, cp = best1se_cp$CP)
+      }
+    }
+
     if (fit_only) {
       out <- fit
     } else {

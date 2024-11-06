@@ -62,6 +62,7 @@ evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
 
   fit_orig <- partykit::as.party(fit)
   node_depths_orig <- get_party_node_depths(fit_orig)
+  leaf_ids_orig <- predict(fit_orig, data.frame(X), type = "node")
   if (is.null(max_depth)) {
     max_depth <- max(max(node_depths_orig), 4)
   }
@@ -80,39 +81,44 @@ evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
       X_b <- X[bootstrap_idx, , drop = FALSE]
       y_b <- y[bootstrap_idx]
       if (is.null(Z)) {
-        fit_b <- estimator(X = X_b, y = y_b, fit_only = TRUE) |>
-          partykit::as.party()
+        fit_b <- estimator(X = X_b, y = y_b, fit_only = TRUE)
       } else {
         Z_b <- Z[bootstrap_idx]
-        fit_b <- estimator(X = X_b, Y = y_b, Z = Z_b) |>
-          partykit::as.party()
+        fit_b <- estimator(X = X_b, Y = y_b, Z = Z_b)
       }
-      node_depths_b <- get_party_node_depths(fit_b)
-      return(
-        list(
-          "fit" = fit_b,
-          "node_depths" = node_depths_b
+      if (!is.null(fit_b)) {
+        fit_b <- partykit::as.party(fit_b)
+        node_depths_b <- get_party_node_depths(fit_b)
+        return(
+          list(
+            "fit" = fit_b,
+            "node_depths" = node_depths_b
+          )
         )
-      )
+      } else {
+        return(NULL)
+      }
     }
-  )
+  ) |>
+    purrr::compact()
 
   bootstrap_fits <- purrr::map(bootstrap_out, "fit")
   node_depths <- purrr::map(bootstrap_out, "node_depths")
 
   Js <- list()
+  Js_scaled <- list()
   preds_mean <- list()
   preds_var <- list()
   for (n_depth in 1:max_depth) {
-    if (any(node_depths_orig > n_depth)) {
-      fit_orig_pruned <- partykit::nodeprune(
-        fit_orig, ids = names(node_depths_orig)[node_depths_orig == n_depth]
-      )
-    } else {
-      fit_orig_pruned <- fit_orig
-    }
-    node_depths_orig_pruned <- get_party_node_depths(fit_orig_pruned)
-    leaf_ids_orig <- predict(fit_orig_pruned, data.frame(X), type = "node")
+    # if (any(node_depths_orig > n_depth)) {
+    #   fit_orig_pruned <- partykit::nodeprune(
+    #     fit_orig, ids = names(node_depths_orig)[node_depths_orig == n_depth]
+    #   )
+    # } else {
+    #   fit_orig_pruned <- fit_orig
+    # }
+    # node_depths_orig_pruned <- get_party_node_depths(fit_orig_pruned)
+    # leaf_ids_orig <- predict(fit_orig_pruned, data.frame(X), type = "node")
 
     bootstrap_leaf_ids <- purrr::map2(
       bootstrap_fits, node_depths,
@@ -145,13 +151,22 @@ evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
     )
 
     J <- purrr::map_dbl(
-      1:B,
+      1:floor(length(bootstrap_fits) / 2),
       ~ jaccardCPP(
         bootstrap_leaf_ids[[.x * 2 - 1]],
         bootstrap_leaf_ids[[.x * 2]]
       )
     )
     Js[[n_depth]] <- J
+
+    J_scaled <- purrr::map_dbl(
+      1:floor(length(bootstrap_fits) / 2),
+      ~ jaccardScaledCPP(
+        as.numeric(as.factor(bootstrap_leaf_ids[[.x * 2 - 1]])) - 1,
+        as.numeric(as.factor(bootstrap_leaf_ids[[.x * 2]])) - 1
+      )
+    )
+    Js_scaled[[n_depth]] <- J_scaled
 
     preds_mean[[n_depth]] <- do.call(cbind, bootstrap_leaf_preds) |>
       rowMeans()
@@ -172,10 +187,11 @@ evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
     ) |>
     dplyr::ungroup()
 
-  leaf_ids_orig <- predict(fit_orig, data.frame(X), type = "node")
   out <- list(
     "jaccard_mean" = sapply(Js, mean),
     "jaccard_distribution" = Js,
+    "jaccard_scaled_mean" = sapply(Js_scaled, mean),
+    "jaccard_scaled_distribution" = Js_scaled,
     "feature_distribution" = feature_dist,
     "bootstrap_predictions_mean" = preds_mean,
     "bootstrap_predictions_var" = preds_var,

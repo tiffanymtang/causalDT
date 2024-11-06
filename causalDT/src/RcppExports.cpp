@@ -23,9 +23,22 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// jaccardScaledCPP
+double jaccardScaledCPP(NumericVector x, NumericVector y);
+RcppExport SEXP _causalDT_jaccardScaledCPP(SEXP xSEXP, SEXP ySEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
+    rcpp_result_gen = Rcpp::wrap(jaccardScaledCPP(x, y));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_causalDT_jaccardCPP", (DL_FUNC) &_causalDT_jaccardCPP, 2},
+    {"_causalDT_jaccardScaledCPP", (DL_FUNC) &_causalDT_jaccardScaledCPP, 2},
     {NULL, NULL, 0}
 };
 

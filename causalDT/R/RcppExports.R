@@ -5,3 +5,7 @@ jaccardCPP <- function(x, y) {
     .Call(`_causalDT_jaccardCPP`, x, y)
 }
 
+jaccardScaledCPP <- function(x, y) {
+    .Call(`_causalDT_jaccardScaledCPP`, x, y)
+}
+

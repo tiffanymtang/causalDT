@@ -10,6 +10,13 @@
 #'   See `? rpart.control` for details.
 #' @param rpart_fit An `rpart` object.
 #' @param party_fit A `party` object.
+#' @param prune Method for pruning the tree. Default is \code{"none"}. Options
+#'   are \code{"none"}, \code{"min"}, and \code{"1se"}. If \code{"min"}, the
+#'   tree is pruned using the complexity threshold which minimizes the
+#'   cross-validation error. If \code{"1se"}, the tree is pruned using the
+#'   largest complexity threshold which yields a cross-vaidation error within
+#'   one standard error of the minimum. If \code{"none"}, the tree is not
+#'   pruned.
 #'
 #' @keywords internal
 NULL
@@ -128,6 +135,7 @@ causalDT <- function(X, Y, Z,
                      teacher_predict = NULL,
                      student_model = "rpart",
                      rpart_control = NULL,
+                     rpart_prune = c("none", "min", "1se"),
                      nfolds_crossfit = NULL,
                      nreps_crossfit = NULL,
                      B_stability = 100,
@@ -158,7 +166,8 @@ causalDT <- function(X, Y, Z,
   if (identical(student_model, "rpart")) {
     student_model <- purrr::partial(
       student_rpart,
-      rpart_control = rpart_control
+      rpart_control = rpart_control,
+      prune = rpart_prune
     )
     student_stability_model <- student_rpart
   } else if (!is.function(student_model)) {
