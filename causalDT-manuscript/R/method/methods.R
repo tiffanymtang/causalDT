@@ -175,7 +175,7 @@ virtual_twins <- function(X, Y, Z,
 
 
 causal_tree <- function(X, Y, Z,
-                        prune = TRUE,
+                        prune = c("none", "min", "1se"),
                         causaltree_args = list(
                           split.Rule = "CT",
                           cv.option = "CT",
@@ -192,6 +192,7 @@ causal_tree <- function(X, Y, Z,
                         return_details = FALSE,
                         ...) {
 
+  prune <- match.arg(prune)
   rpart_control <- causaltree_args$control
   causaltree_args$control <- NULL
 
@@ -207,12 +208,20 @@ causal_tree <- function(X, Y, Z,
   )
 
   # Prune tree
-  if (prune) {
-    opcp <- tibble::as_tibble(fit$cptable) |>
+  # pruning
+  if (prune != "none") {
+    best_cp <- as.data.frame(fit$cptable) |>
       dplyr::filter(xerror == min(xerror, na.rm = TRUE)) |>
-      dplyr::slice(1) |>
-      dplyr::pull(1)
-    fit <- rpart::prune(fit, opcp)
+      dplyr::slice(1)
+    if (prune == "min") {
+      fit <- rpart::prune(fit, cp = best_cp$CP)
+    } else if (prune == "1se") {
+      best1se_cp <- as.data.frame(fit$cptable) |>
+        dplyr::filter(xerror <= (best_cp$xerror + best_cp$xstd)) |>
+        dplyr::filter(nsplit == min(nsplit, na.rm = TRUE)) |>
+        dplyr::slice(1)
+      fit <- rpart::prune(fit, cp = best1se_cp$CP)
+    }
   }
   tauhat <- predict(fit)
   group_cates <- tibble::tibble(

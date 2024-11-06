@@ -119,3 +119,102 @@ get_lm_subgroups <- function(tidy_fit) {
     purrr::compact()
   return(subgroups)
 }
+
+
+prune_tree <- function(fit, prune = c("none", "min", "1se")) {
+  prune <- match.arg(prune)
+  if (is.null(fit)) {
+    return(NULL)
+  } else if (prune != "none") {
+    best_cp <- as.data.frame(fit$cptable) |>
+      dplyr::filter(xerror == min(xerror, na.rm = TRUE)) |>
+      dplyr::slice(1)
+    if (prune == "min") {
+      fit <- rpart::prune(fit, cp = best_cp$CP)
+    } else if (prune == "1se") {
+      best1se_cp <- as.data.frame(fit$cptable) |>
+        dplyr::filter(xerror <= (best_cp$xerror + best_cp$xstd)) |>
+        dplyr::filter(nsplit == min(nsplit, na.rm = TRUE)) |>
+        dplyr::slice(1)
+      fit <- rpart::prune(fit, cp = best1se_cp$CP)
+    }
+  }
+
+  subgroups <- causalDT::get_rpart_paths(fit)
+  tree_info <- causalDT::get_rpart_tree_info(fit)
+  predictions <- predict(fit)
+  out <- tibble::tibble(
+    fit = list(fit),
+    model_info = list(tree_info),
+    subgroups = list(subgroups),
+    student_predictions = list(predictions)
+  )
+  return(out)
+}
+
+
+add_pruned_fits <- function(fit_results,
+                            vary_params = NULL) {
+  keep_cols <- c(
+    ".rep", ".dgp_name", ".method_name", vary_params,
+    "holdout_idxs", "tau", "tau_denoised", "true_thresholds"
+  )
+  pruned_min_results <- fit_results |>
+    dplyr::filter(
+      stringr::str_detect(.method_name, "Distilled") |
+        (.method_name == "Causal Tree")
+    ) |>
+    dplyr::rowwise() |>
+    dplyr::mutate(
+      .method_name = paste0(.method_name, " (min-pruned)"),
+      pruned_results = list(prune_tree(fit, prune = "min"))
+    ) |>
+    dplyr::select(tidyselect::all_of(keep_cols), pruned_results) |>
+    tidyr::unnest(pruned_results, keep_empty = TRUE) |>
+    dplyr::ungroup()
+  pruned_1se_results <- fit_results |>
+    dplyr::filter(
+      stringr::str_detect(.method_name, "Distilled") |
+        (.method_name == "Causal Tree (unpruned)")
+    ) |>
+    dplyr::rowwise() |>
+    dplyr::mutate(
+      .method_name = paste0(.method_name, " (1se-pruned)"),
+      pruned_results = list(prune_tree(fit, prune = "1se"))
+    ) |>
+    dplyr::select(tidyselect::all_of(keep_cols), pruned_results) |>
+    tidyr::unnest(pruned_results, keep_empty = TRUE) |>
+    dplyr::ungroup()
+  fit_results <- dplyr::bind_rows(
+    fit_results,
+    pruned_min_results,
+    pruned_1se_results
+  )
+  return(fit_results)
+}
+
+
+add_best_distilled_method <- function(fit_results,
+                                      vary_params = NULL,
+                                      max_depths = 1:4) {
+  id_cols <- c(".rep", ".dgp_name", ".method_name", vary_params)
+  return(fit_results)
+
+  best_methods_df <- get_best_distilled_method_info(
+    fit_results,
+    vary_params = vary_params,
+    max_depths = max_depths
+  ) |>
+    dplyr::select(-jaccard, -cum_jaccard) |>
+    dplyr::left_join(fit_results, by = id_cols) |>
+    dplyr::mutate(
+      .method_name = "Most Stable Distilled Method"
+    ) |>
+    tidyr::unite(
+      col = ".method_name", .method_name, depth, sep = " Depth "
+    ) |>
+    dplyr::ungroup()
+
+  fit_results <- dplyr::bind_rows(fit_results, best_methods_df)
+  return(fit_results)
+}

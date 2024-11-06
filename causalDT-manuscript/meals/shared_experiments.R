@@ -16,11 +16,31 @@ experiment <- create_experiment(
   add_method(lasso_method) |>
   ### evaluators
   add_evaluator(subgroup_feature_selection_errors_summary) |>
+  add_evaluator(subgroup_feature_selection_errors_max_depth2_summary) |>
+  add_evaluator(subgroup_feature_selection_errors_max_depth3_summary) |>
+  add_evaluator(subgroup_feature_selection_errors_max_depth4_summary) |>
   add_evaluator(subgroup_thresholds_summary) |>
+  add_evaluator(subgroup_thresholds_max_depth2_summary) |>
+  add_evaluator(subgroup_thresholds_max_depth3_summary) |>
+  add_evaluator(subgroup_thresholds_max_depth4_summary) |>
+  add_evaluator(subgroup_threshold_dist_summary) |>
+  add_evaluator(subgroup_threshold_dist_max_depth2_summary) |>
+  add_evaluator(subgroup_threshold_dist_max_depth3_summary) |>
+  add_evaluator(subgroup_threshold_dist_max_depth4_summary) |>
   add_evaluator(subgroup_cate_err_summary) |>
   ### visualizers
   add_visualizer(subgroup_feature_selection_err_plot) |>
+  add_visualizer(subgroup_feature_selection_err_max_depth2_plot) |>
+  add_visualizer(subgroup_feature_selection_err_max_depth3_plot) |>
+  add_visualizer(subgroup_feature_selection_err_max_depth4_plot) |>
   add_visualizer(subgroup_thresholds_plot) |>
+  add_visualizer(subgroup_thresholds_max_depth2_plot) |>
+  add_visualizer(subgroup_thresholds_max_depth3_plot) |>
+  add_visualizer(subgroup_thresholds_max_depth4_plot) |>
+  add_visualizer(subgroup_threshold_dist_plot) |>
+  add_visualizer(subgroup_threshold_dist_max_depth2_plot) |>
+  add_visualizer(subgroup_threshold_dist_max_depth3_plot) |>
+  add_visualizer(subgroup_threshold_dist_max_depth4_plot) |>
   add_visualizer(subgroup_nsplits_plot) |>
   add_visualizer(subgroup_ntrees_plot) |>
   add_visualizer(subgroup_cates_plot) |>

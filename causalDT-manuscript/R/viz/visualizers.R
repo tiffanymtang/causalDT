@@ -3,6 +3,11 @@ plot_subgroup_feature_selection_err <- function(fit_results = NULL,
                                                 vary_params = NULL,
                                                 eval_name = "Subgroup Feature Selection Errors Summary",
                                                 eval_id = "feature_selection_err",
+                                                metrics = c(
+                                                  "F1",
+                                                  "# True Positives",
+                                                  "# False Positives"
+                                                ),
                                                 facet_type = "wrap",
                                                 facet_args = list(
                                                   nrow = 1,
@@ -21,10 +26,11 @@ plot_subgroup_feature_selection_err <- function(fit_results = NULL,
         # .metric == "fn" ~ "False Negatives",
         .metric == "fp" ~ "# False Positives",
         .metric == "tp" ~ "# True Positives",
+        .metric == "nsubgroups" ~ "Number of Subgroups",
         TRUE ~ .metric
       ) |>
         factor(
-          levels = c("F1", "# True Positives", "# False Positives")
+          levels = metrics
         )
     ) |>
     dplyr::filter(
@@ -419,9 +425,11 @@ plot_subgroup_cates <- function(fit_results,
 plot_stability_diagnostics <- function(fit_results,
                                        eval_results,
                                        vary_params = NULL,
+                                       max_depth = 4,
                                        ...) {
   id_cols <- c(".rep", ".dgp_name", ".method_name", vary_params)
   group_cols <- c(".dgp_name", ".method_name", vary_params)
+  n_reps <- length(unique(fit_results$.rep))
 
   plt_df <- fit_results |>
     dplyr::filter(
@@ -433,31 +441,42 @@ plot_stability_diagnostics <- function(fit_results,
         stability_diagnostics,
         ~ tibble::tibble(
           depth = 1:length(.x$jaccard_mean),
-          jaccard = .x$jaccard_mean
+          jaccard = .x$jaccard_mean,
+          jaccard_scaled = .x$jaccard_scaled_mean
         )
       )
     ) |>
     dplyr::select(
       tidyselect::all_of(id_cols), jaccard
     ) |>
-    tidyr::unnest(jaccard)
+    tidyr::unnest(jaccard) |>
+    dplyr::filter(
+      depth <= !!max_depth
+    )
 
   plt1 <- plt_df |>
+    # tidyr::pivot_longer(
+    #   cols = c(jaccard, jaccard_scaled),
+    #   names_to = "metric",
+    #   values_to = "value"
+    # ) |>
+    # dplyr::group_by(
+    #   dplyr::across(tidyselect::all_of(c(group_cols, "depth", "metric")))
+    # ) |>
     dplyr::group_by(
       dplyr::across(tidyselect::all_of(c(group_cols, "depth")))
     ) |>
     dplyr::summarise(
-      mean_jaccard = mean(jaccard),
-      sd_jaccard = sd(jaccard),
-      se_jaccard = sd(jaccard) / sqrt(dplyr::n()),
+      mean_jaccard = mean(jaccard_scaled),
+      sd_jaccard = sd(jaccard_scaled),
+      se_jaccard = sd(jaccard_scaled) / sqrt(dplyr::n()),
       .groups = "drop"
     ) |>
     ggplot2::ggplot() +
-    ggplot2::geom_line(
-      ggplot2::aes(
-        x = depth, y = mean_jaccard, color = .method_name
-      )
+    ggplot2::aes(
+      x = depth, y = mean_jaccard, color = .method_name
     ) +
+    ggplot2::geom_line() +
     ggplot2::geom_ribbon(
       ggplot2::aes(
         x = depth,
@@ -465,72 +484,135 @@ plot_stability_diagnostics <- function(fit_results,
         ymax = mean_jaccard + se_jaccard,
         fill = .method_name
       ),
+      inherit.aes = FALSE,
       alpha = 0.2
     ) +
+    # ggplot2::facet_grid(
+    #   rows = ggplot2::vars(metric)
+    # ) +
     vthemes::scale_color_vmodern(discrete = TRUE) +
     vthemes::scale_fill_vmodern(discrete = TRUE) +
     vthemes::theme_vmodern(...)
 
-  plt_df_wide <- plt_df |>
-    tidyr::pivot_wider(
-      names_from = .method_name,
-      values_from = jaccard
-    ) #|>
-    # dplyr::select(
-    #   -`Causal Tree (unpruned)`
-    # )
+  # plt_df_wide <- plt_df |>
+  #   tidyr::pivot_wider(
+  #     names_from = .method_name,
+  #     values_from = jaccard
+  #   ) #|>
+  #   # dplyr::select(
+  #   #   -`Causal Tree (unpruned)`
+  #   # )
+  #
+  # plt_df_diff <- plt_df_wide |>
+  #   dplyr::mutate(
+  #     dplyr::across(
+  #       tidyselect::contains("Distilled"),
+  #       ~ .x - `Causal Tree (pruned)`
+  #     )
+  #   ) |>
+  #   tidyr::pivot_longer(
+  #     cols = tidyselect::contains("Distilled"),
+  #     names_to = ".method_name",
+  #     values_to = "jaccard"
+  #   )
+  #
+  # plt2 <- plt_df_diff |>
+  #   dplyr::filter(depth <= !!max_depth) |>
+  #   ggplot2::ggplot() +
+  #   ggplot2::geom_violin(
+  #     ggplot2::aes(
+  #       x = depth,
+  #       y = jaccard,
+  #       fill = .method_name,
+  #       group = interaction(depth, .method_name)
+  #     ),
+  #     alpha = 0.4,
+  #     color = "transparent",
+  #     position = ggplot2::position_dodge(0.9),
+  #     scale = "width"
+  #   ) +
+  #   ggplot2::geom_boxplot(
+  #     ggplot2::aes(
+  #       x = depth,
+  #       y = jaccard,
+  #       color = .method_name,
+  #       group = interaction(depth, .method_name)
+  #     ),
+  #     width = 0.2,
+  #     alpha = 0,
+  #     position = ggplot2::position_dodge(0.9)
+  #   ) +
+  #   vthemes::scale_color_vmodern(discrete = TRUE) +
+  #   vthemes::scale_fill_vmodern(discrete = TRUE) +
+  #   vthemes::theme_vmodern(...)
 
-  plt_df_diff <- plt_df_wide |>
-    dplyr::mutate(
-      dplyr::across(
-        tidyselect::contains("Distilled"),
-        ~ .x - `Causal Tree (pruned)`
-      )
+  feature_plt_df <- fit_results |>
+    dplyr::filter(
+      stringr::str_detect(.method_name, "Distilled") |
+        stringr::str_detect(.method_name, "Causal Tree \\(pruned\\)")
     ) |>
-    tidyr::pivot_longer(
-      cols = tidyselect::contains("Distilled"),
-      names_to = ".method_name",
-      values_to = "jaccard"
+    dplyr::mutate(
+      feature_dist = purrr::map(stability_diagnostics, "feature_distribution")
+    ) |>
+    dplyr::select(
+      tidyselect::all_of(id_cols), feature_dist
+    ) |>
+    tidyr::unnest(feature_dist) |>
+    dplyr::group_by(
+      dplyr::across(c(tidyselect::all_of(group_cols), "depth", "feature"))
+    ) |>
+    dplyr::summarise(
+      mean_freq = sum(freq) / n_reps,
+      sd_freq = 1 / (n_reps - 1) * sqrt(sum((freq - mean_freq)^2)),
+      .groups = "drop"
     )
 
-  plt2 <- plt_df_diff |>
-    dplyr::filter(depth <= 4) |>
+  if (isTRUE(all(stringr::str_detect(feature_plt_df$feature, "^X[0-9]+$")))) {
+    feature_plt_df <- feature_plt_df |>
+      dplyr::mutate(
+        feature = factor(
+          feature,
+          levels = paste0(
+            "X", sort(unique(as.numeric(stringr::str_remove(feature, "X"))))
+          )
+        )
+      )
+  }
+
+  plt3 <- feature_plt_df |>
+    dplyr::filter(depth <= !!max_depth) |>
+    dplyr::mutate(
+      .method_name = stringr::str_remove(.method_name, " \\(pruned\\)"),
+      depth = sprintf("Depth = %s", depth)
+    ) |>
     ggplot2::ggplot() +
-    ggplot2::geom_violin(
+    ggplot2::geom_bar(
       ggplot2::aes(
-        x = depth,
-        y = jaccard,
-        fill = .method_name,
-        group = interaction(depth, .method_name)
+        x = .method_name, y = mean_freq, fill = feature
       ),
-      alpha = 0.4,
-      color = "transparent",
-      position = ggplot2::position_dodge(0.9),
-      scale = "width"
+      stat = "identity",
+      position = "fill"
     ) +
-    ggplot2::geom_boxplot(
-      ggplot2::aes(
-        x = depth,
-        y = jaccard,
-        color = .method_name,
-        group = interaction(depth, .method_name)
-      ),
-      width = 0.2,
-      alpha = 0,
-      position = ggplot2::position_dodge(0.9)
+    ggplot2::facet_grid(
+      cols = ggplot2::vars(depth)
     ) +
-    vthemes::scale_color_vmodern(discrete = TRUE) +
     vthemes::scale_fill_vmodern(discrete = TRUE) +
     vthemes::theme_vmodern(...)
 
   if (!is.null(vary_params)) {
     plt1 <- plt1 +
       ggplot2::facet_grid(
+        # rows = ggplot2::vars(metric),
         cols = ggplot2::vars(!!rlang::sym(vary_params))
       )
-    plt2 <- plt2 +
+    # plt2 <- plt2 +
+    #   ggplot2::facet_grid(
+    #     cols = ggplot2::vars(!!rlang::sym(vary_params))
+    #   )
+    plt3 <- plt3 +
       ggplot2::facet_grid(
-        cols = ggplot2::vars(!!rlang::sym(vary_params))
+        rows = ggplot2::vars(!!rlang::sym(vary_params)),
+        cols = ggplot2::vars(depth)
       )
   }
 
@@ -557,7 +639,12 @@ plot_stability_diagnostics <- function(fit_results,
   # ) +
   #   ggplot2::geom_abline(slope = 1, intercept = 0)
 
-  plt <- patchwork::wrap_plots(plt1, plt2, nrow = 2, ncol = 1)
+  plt <- patchwork::wrap_plots(
+    plt1, plt3, nrow = 2, ncol = 1, heights = c(1, 3)
+  )
+  # plt <- patchwork::wrap_plots(
+  #   plt1, plt2, plt3, nrow = 3, ncol = 1, heights = c(1, 1, 3)
+  # )
   return(plt)
 }
 

@@ -11,8 +11,10 @@ get_best_distilled_method_info <- function(fit_results,
       jaccard = purrr::map(
         stability_diagnostics,
         ~ tibble::tibble(
-          depth = 1:length(.x$jaccard_mean),
-          jaccard = .x$jaccard_mean
+          # depth = 1:length(.x$jaccard_mean),
+          # jaccard = .x$jaccard_mean
+          depth = 1:length(.x$jaccard_scaled_mean),
+          jaccard = .x$jaccard_scaled_mean
         )
       )
     ) |>

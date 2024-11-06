@@ -1,5 +1,6 @@
 eval_subgroup_feature_selection_err <- function(fit_results,
                                                 vary_params = NULL,
+                                                max_depth = NULL,
                                                 nested_cols = NULL,
                                                 group_cols = NULL,
                                                 na_rm = FALSE,
@@ -23,6 +24,16 @@ eval_subgroup_feature_selection_err <- function(fit_results,
   subgroup_feature_selection_err <- function(data) {
     true_vars <- names(data[["true_thresholds"]][[1]])
     model_info <- data[["model_info"]][[1]]
+    nsubgroups <- length(data[["subgroups"]][[1]])
+    if (("node" %in% colnames(model_info)) && !is.null(max_depth)) {
+      model_info <- model_info |>
+        dplyr::mutate(
+          depth = trunc(log(node, base = 2)) + 1
+        ) |>
+        dplyr::filter(
+          depth <= !!max_depth
+        )
+    }
 
     if (is.null(model_info)) {
       tp <- 0
@@ -36,7 +47,15 @@ eval_subgroup_feature_selection_err <- function(fit_results,
       fn <- sum(!(true_vars %in% subgroup_vars))
       f1 <-  (2 * tp) / (2 * tp + fp + fn)
     }
-    return(tibble::tibble(F1 = f1, tp = tp, fp = fp, fn = fn))
+    return(
+      tibble::tibble(
+        F1 = f1,
+        tp = tp,
+        fp = fp,
+        fn = fn,
+        nsubgroups = nsubgroups
+      )
+    )
   }
 
   eval_data <- simChef::eval_constructor(
@@ -46,7 +65,9 @@ eval_subgroup_feature_selection_err <- function(fit_results,
   ) |>
     tidyr::unnest(.eval_result) |>
     tidyr::pivot_longer(
-      cols = c(F1, tp, fp, fn), names_to = ".metric", values_to = ".estimate"
+      cols = c(F1, tp, fp, fn, nsubgroups),
+      names_to = ".metric",
+      values_to = ".estimate"
     ) |>
     dplyr::group_by(dplyr::across(tidyselect::any_of(group_vars)))
 
@@ -66,6 +87,7 @@ eval_subgroup_feature_selection_err <- function(fit_results,
 
 eval_subgroup_thresholds <- function(fit_results,
                                      vary_params = NULL,
+                                     max_depth = NULL,
                                      nested_cols = NULL,
                                      group_cols = NULL,
                                      na_rm = FALSE,
@@ -83,13 +105,22 @@ eval_subgroup_thresholds <- function(fit_results,
   )
   nreps <- length(unique(fit_results$.rep))
 
-  # fit_results <- add_best_distilled_method(
-  #   fit_results = fit_results,
-  #   vary_params = vary_params
-  # )
+  fit_results <- add_best_distilled_method(
+    fit_results = fit_results,
+    vary_params = vary_params
+  )
 
   subgroup_thresholds <- function(data) {
     model_info <- data[["model_info"]][[1]]
+    if (("node" %in% colnames(model_info)) && !is.null(max_depth)) {
+      model_info <- model_info |>
+        dplyr::mutate(
+          depth = trunc(log(node, base = 2)) + 1
+        ) |>
+        dplyr::filter(
+          depth <= !!max_depth
+        )
+    }
     if (length(unlist(data[["true_thresholds"]])) == 1) {
       true_vars <- names(data[["true_thresholds"]])
     } else {
@@ -186,6 +217,105 @@ eval_subgroup_thresholds <- function(fit_results,
   } else {
     eval_summary <- eval_data
   }
+
+  return(eval_summary)
+}
+
+
+eval_subgroup_threshold_dist <- function(fit_results,
+                                         vary_params = NULL,
+                                         max_depth = NULL,
+                                         nested_cols = NULL,
+                                         group_cols = NULL,
+                                         na_rm = FALSE,
+                                         summary_funs = c("mean", "median", "min",
+                                                          "max", "sd", "raw"),
+                                         custom_summary_funs = list(
+                                           "se_threshold_dist" =
+                                             function(x) sd(x) / sqrt(length(x))
+                                         ),
+                                         eval_id = "threshold_dist") {
+
+  group_vars <- c(
+    ".dgp_name", ".method_name", vary_params, group_cols, ".var", ".metric"
+  )
+  nreps <- length(unique(fit_results$.rep))
+
+  fit_results <- add_best_distilled_method(
+    fit_results = fit_results,
+    vary_params = vary_params
+  )
+
+  subgroup_thresholds <- function(data) {
+    model_info <- data[["model_info"]][[1]]
+    if (("node" %in% colnames(model_info)) && !is.null(max_depth)) {
+      model_info <- model_info |>
+        dplyr::mutate(
+          depth = trunc(log(node, base = 2)) + 1
+        ) |>
+        dplyr::filter(
+          depth <= !!max_depth
+        )
+    }
+    if (length(unlist(data[["true_thresholds"]])) == 1) {
+      true_thrs <- data[["true_thresholds"]]
+    } else {
+      true_thrs <- data[["true_thresholds"]][[1]]
+    }
+    true_vars <- names(true_thrs)
+    if (is.null(model_info) || (nrow(model_info) == 0)) {
+      return(NULL)
+    }
+    subgroup_thresholds <- model_info |>
+      dplyr::rename(.var = var) |>
+      dplyr::mutate(
+        categorical = stringr::str_detect(.var, "\\.\\."),
+        thr = dplyr::case_when(
+          categorical ~ NA,
+          TRUE ~ thr
+        ),
+        cat_thr = dplyr::case_when(
+          categorical ~ stringr::str_extract(.var, "[^\\.\\.]*$"),
+          TRUE ~ NA
+        ),
+        .var = collapse_dummy_vars(.var)
+      ) |>
+      dplyr::filter(.var %in% !!true_vars) |>
+      dplyr::group_by(.var) |>
+      dplyr::summarise(
+        est_thrs = list(thr),
+        .groups = "keep"
+      ) |>
+      dplyr::mutate(
+        .metric = "MAE",
+        thr_dist = purrr::map2(
+          est_thrs, .var,
+          function(est_thrs_vec, v) {
+            sapply(
+              est_thrs_vec,
+              FUN = function(thr) min(abs(thr - true_thrs[[v]]))
+            )
+          }
+        )
+      ) |>
+      tidyr::unnest(thr_dist)
+    return(subgroup_thresholds)
+  }
+
+  eval_data <- simChef::eval_constructor(
+    fit_results = fit_results, vary_params = vary_params,
+    fun = subgroup_thresholds,
+    nested_cols = nested_cols, group_cols = group_cols, na_rm = na_rm
+  ) |>
+    tidyr::unnest(.eval_result) |>
+    dplyr::group_by(dplyr::across(tidyselect::any_of(group_vars)))
+
+  eval_summary <- simChef::eval_summarizer(
+    eval_data = eval_data, eval_id = eval_id, value_col = "thr_dist",
+    summary_funs = summary_funs, custom_summary_funs = custom_summary_funs,
+    na_rm = na_rm
+  ) |>
+    dplyr::filter(!is.na(sd_threshold_dist))
 
   return(eval_summary)
 }
