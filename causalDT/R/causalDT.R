@@ -17,6 +17,13 @@
 #'   largest complexity threshold which yields a cross-vaidation error within
 #'   one standard error of the minimum. If \code{"none"}, the tree is not
 #'   pruned.
+#' @param rpart_prune Method for pruning the tree. Default is \code{"none"}.
+#'   Options are \code{"none"}, \code{"min"}, and \code{"1se"}. If \code{"min"},
+#'   the tree is pruned using the complexity threshold which minimizes the
+#'   cross-validation error. If \code{"1se"}, the tree is pruned using the
+#'   largest complexity threshold which yields a cross-vaidation error within
+#'   one standard error of the minimum. If \code{"none"}, the tree is not
+#'   pruned.
 #'
 #' @keywords internal
 NULL
@@ -141,6 +148,8 @@ causalDT <- function(X, Y, Z,
                      B_stability = 100,
                      max_depth_stability = NULL,
                      ...) {
+
+  rpart_prune <- match.arg(rpart_prune)
 
   # initialize output and helper variables
   n <- nrow(X)

@@ -4,7 +4,14 @@
 \alias{student_rpart}
 \title{Rpart wrapper for causal distillation trees.}
 \usage{
-student_rpart(X, y, method = "anova", rpart_control = NULL, fit_only = FALSE)
+student_rpart(
+  X,
+  y,
+  method = "anova",
+  rpart_control = NULL,
+  prune = c("none", "min", "1se"),
+  fit_only = FALSE
+)
 }
 \arguments{
 \item{X}{A tibble, data.frame, or matrix of covariates.}
@@ -16,6 +23,14 @@ Default is \code{"anova"}. See \code{rpart::rpart()} for more details.}
 
 \item{rpart_control}{A list of control parameters for the \code{rpart} algorithm.
 See \code{? rpart.control} for details.}
+
+\item{prune}{Method for pruning the tree. Default is \code{"none"}. Options
+are \code{"none"}, \code{"min"}, and \code{"1se"}. If \code{"min"}, the
+tree is pruned using the complexity threshold which minimizes the
+cross-validation error. If \code{"1se"}, the tree is pruned using the
+largest complexity threshold which yields a cross-vaidation error within
+one standard error of the minimum. If \code{"none"}, the tree is not
+pruned.}
 
 \item{fit_only}{Logical. If \code{TRUE}, only the fitted model is returned.
 Default is \code{FALSE}.}

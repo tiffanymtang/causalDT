@@ -14,6 +14,7 @@ causalDT(
   teacher_predict = NULL,
   student_model = "rpart",
   rpart_control = NULL,
+  rpart_prune = c("none", "min", "1se"),
   nfolds_crossfit = NULL,
   nreps_crossfit = NULL,
   B_stability = 100,
@@ -65,6 +66,14 @@ using the default "rpart".}
 
 \item{rpart_control}{A list of control parameters for the \code{rpart} algorithm.
 See \code{? rpart.control} for details. Used only if \code{student_model} is "rpart".}
+
+\item{rpart_prune}{Method for pruning the tree. Default is \code{"none"}.
+Options are \code{"none"}, \code{"min"}, and \code{"1se"}. If \code{"min"},
+the tree is pruned using the complexity threshold which minimizes the
+cross-validation error. If \code{"1se"}, the tree is pruned using the
+largest complexity threshold which yields a cross-vaidation error within
+one standard error of the minimum. If \code{"none"}, the tree is not
+pruned.}
 
 \item{nfolds_crossfit}{Number of folds in cross-fitting procedure.
 If \code{teacher_model} is "causal_forest", the default is 1 (no cross-fitting
