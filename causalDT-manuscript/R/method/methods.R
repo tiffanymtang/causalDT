@@ -5,6 +5,7 @@ causalDT_method <- function(X, Y, Z,
                             teacher_predict = NULL,
                             student_model = "rpart",
                             rpart_control = NULL,
+                            rpart_prune = c("none", "min", "1se"),
                             nfolds_crossfit = NULL,
                             nreps_crossfit = NULL,
                             B_stability = 0,
@@ -13,6 +14,13 @@ causalDT_method <- function(X, Y, Z,
                             return_details = FALSE,
                             return_permuted_results = FALSE,
                             ...) {
+
+  rpart_prune <- match.arg(rpart_prune, several.ok = TRUE)
+  if (length(rpart_prune) > 1) {
+    rpart_prune0 <- "none"
+  } else {
+    rpart_prune0 <- rpart_prune
+  }
 
   start_time <- Sys.time()
   X_dummy <- dummy_code(X)
@@ -29,6 +37,7 @@ causalDT_method <- function(X, Y, Z,
         teacher_predict = teacher_predict,
         student_model = student_model,
         rpart_control = rpart_control,
+        rpart_prune = rpart_prune0,
         nfolds_crossfit = nfolds_crossfit,
         nreps_crossfit = nreps_crossfit,
         B_stability = B_stability,
@@ -37,6 +46,50 @@ causalDT_method <- function(X, Y, Z,
       causalDT_args
     )
   )
+
+  X_est <- X_dummy[results$holdout_idxs, , drop = FALSE]
+  Y_est <- Y[results$holdout_idxs]
+  Z_est <- Z[results$holdout_idxs]
+
+  fit_ls <- list()
+  predictions_ls <- list()
+  group_cates_ls <- list()
+  tree_info_ls <- list()
+  subgroups_ls <- list()
+  if ((length(rpart_prune) > 1) && (identical(student_model, "rpart"))) {
+    for (rpart_prune_mode in rpart_prune) {
+      fit <- results$student_fit$fit
+      if (is.null(fit)) {
+        return(NULL)
+      } else if (rpart_prune_mode != "none") {
+        best_cp <- as.data.frame(fit$cptable) |>
+          dplyr::filter(xerror == min(xerror, na.rm = TRUE)) |>
+          dplyr::slice(1)
+        if (rpart_prune_mode == "min") {
+          fit <- rpart::prune(fit, cp = best_cp$CP)
+        } else if (rpart_prune_mode == "1se") {
+          best1se_cp <- as.data.frame(fit$cptable) |>
+            dplyr::filter(xerror <= (best_cp$xerror + best_cp$xstd)) |>
+            dplyr::filter(nsplit == min(nsplit, na.rm = TRUE)) |>
+            dplyr::slice(1)
+          fit <- rpart::prune(fit, cp = best1se_cp$CP)
+        }
+      }
+      fit_ls[[rpart_prune_mode]] <- fit
+      subgroups_ls[[rpart_prune_mode]] <- causalDT::get_rpart_paths(fit)
+      tree_info_ls[[rpart_prune_mode]] <- causalDT::get_rpart_tree_info(fit)
+      predictions_ls[[rpart_prune_mode]] <- predict(fit)
+      group_cates_ls[[rpart_prune_mode]] <- causalDT::estimate_group_cates(
+        fit = fit, X = X_est, Y = Y_est, Z = Z_est
+      )
+    }
+  } else {
+    fit_ls[[rpart_prune[1]]] <- results$student_fit$fit
+    subgroups_ls[[rpart_prune[1]]] <- results$student_fit$subgroups
+    tree_info_ls[[rpart_prune[1]]] <- results$student_fit$tree_info
+    predictions_ls[[rpart_prune[1]]] <- results$student_fit$predictions
+    group_cates_ls[[rpart_prune[1]]] <- results$estimate
+  }
   end_time <- Sys.time()
 
   permuted_results <- NULL
@@ -71,12 +124,17 @@ causalDT_method <- function(X, Y, Z,
 
   out <- c(
     list(
-      fit = results$student_fit$fit,
-      model_info = results$student_fit$tree_info,
-      subgroups = results$student_fit$subgroups,
-      group_cates = results$estimate,
+      est_data = list(
+        X = X_est,
+        Y = Y_est,
+        Z = Z_est
+      ),
+      fit = fit_ls,
+      model_info = tree_info_ls,
+      subgroups = subgroups_ls,
+      group_cates = group_cates_ls,
       teacher_predictions = results$teacher_predictions,
-      student_predictions = results$student_fit$predictions,
+      student_predictions = predictions_ls,
       stability_diagnostics = results$stability_diagnostics,
       holdout_idxs = results$holdout_idxs,
       permuted_results = permuted_results,
@@ -92,10 +150,12 @@ causalDT_method <- function(X, Y, Z,
 virtual_twins <- function(X, Y, Z,
                           ranger_args = list(),
                           rpart_control = NULL,
+                          rpart_prune = c("none", "min", "1se"),
                           holdout_prop = 0.3,
                           return_details = FALSE,
                           ...) {
 
+  rpart_prune <- match.arg(rpart_prune)
   start_time <- Sys.time()
   X <- dummy_code(X)
   group_cates <- NULL
@@ -108,6 +168,10 @@ virtual_twins <- function(X, Y, Z,
     X <- X[-holdout_idxs, , drop = FALSE]
     Y <- Y[-holdout_idxs]
     Z <- Z[-holdout_idxs]
+  } else {
+    X_est <- X
+    Y_est <- Y
+    Z_est <- Z
   }
 
   augmented_df <- data.frame(X, Z, Y, Z * X, (1 - Z) * X)
@@ -136,7 +200,7 @@ virtual_twins <- function(X, Y, Z,
 
   # Step 4: Train decision tree to predict tau.hat
   student_fit_out <- causalDT::student_rpart(
-    X, tauhat, rpart_control = rpart_control
+    X, tauhat, rpart_control = rpart_control, prune = rpart_prune
   )
 
   # Step 5: Estimate group CATEs
@@ -158,6 +222,11 @@ virtual_twins <- function(X, Y, Z,
 
   out <- c(
     list(
+      est_data = list(
+        X = X_est,
+        Y = Y_est,
+        Z = Z_est
+      ),
       fit = student_fit_out$fit,
       model_info = student_fit_out$tree_info,
       subgroups = student_fit_out$subgroups,
@@ -192,7 +261,7 @@ causal_tree <- function(X, Y, Z,
                         return_details = FALSE,
                         ...) {
 
-  prune <- match.arg(prune)
+  prune <- match.arg(prune, several.ok = TRUE)
   rpart_control <- causaltree_args$control
   causaltree_args$control <- NULL
 
@@ -209,36 +278,51 @@ causal_tree <- function(X, Y, Z,
 
   # Prune tree
   # pruning
-  if (prune != "none") {
-    best_cp <- as.data.frame(fit$cptable) |>
-      dplyr::filter(xerror == min(xerror, na.rm = TRUE)) |>
-      dplyr::slice(1)
-    if (prune == "min") {
-      fit <- rpart::prune(fit, cp = best_cp$CP)
-    } else if (prune == "1se") {
-      best1se_cp <- as.data.frame(fit$cptable) |>
-        dplyr::filter(xerror <= (best_cp$xerror + best_cp$xstd)) |>
-        dplyr::filter(nsplit == min(nsplit, na.rm = TRUE)) |>
+  fit_ls <- list()
+  tauhat_ls <- list()
+  group_cates_ls <- list()
+  tree_info_ls <- list()
+  subgroups_ls <- list()
+  for (prune_mode in prune) {
+    if (prune_mode != "none") {
+      best_cp <- as.data.frame(fit$cptable) |>
+        dplyr::filter(xerror == min(xerror, na.rm = TRUE)) |>
         dplyr::slice(1)
-      fit <- rpart::prune(fit, cp = best1se_cp$CP)
+      if (prune_mode == "min") {
+        pruned_fit <- rpart::prune(fit, cp = best_cp$CP)
+      } else if (prune_mode == "1se") {
+        best1se_cp <- as.data.frame(fit$cptable) |>
+          dplyr::filter(xerror <= (best_cp$xerror + best_cp$xstd)) |>
+          dplyr::filter(nsplit == min(nsplit, na.rm = TRUE)) |>
+          dplyr::slice(1)
+        pruned_fit <- rpart::prune(fit, cp = best1se_cp$CP)
+      }
+    } else {
+      pruned_fit <- fit
     }
-  }
-  tauhat <- predict(fit)
-  group_cates <- tibble::tibble(
-    estimate = tauhat,
-    Z = Z
-  ) |>
-    dplyr::group_by(estimate) |>
-    dplyr::summarise(
-      .n1 = sum(Z == 1),
-      .n0 = sum(Z == 0),
-      .sample_idxs = list(dplyr::cur_group_rows()),
-      .groups = "drop"
-    )
+    tauhat <- predict(pruned_fit)
+    group_cates <- tibble::tibble(
+      estimate = tauhat,
+      Z = Z
+    ) |>
+      dplyr::group_by(estimate) |>
+      dplyr::summarise(
+        .n1 = sum(Z == 1),
+        .n0 = sum(Z == 0),
+        .sample_idxs = list(dplyr::cur_group_rows()),
+        .groups = "drop"
+      )
 
-  # Step 2: Extract subgroups from causal tree
-  tree_info <- causalDT::get_rpart_tree_info(fit)
-  subgroups <- causalDT::get_rpart_paths(fit)
+    # Step 2: Extract subgroups from causal tree
+    tree_info <- causalDT::get_rpart_tree_info(pruned_fit)
+    subgroups <- causalDT::get_rpart_paths(pruned_fit)
+
+    fit_ls[[prune_mode]] <- pruned_fit
+    tauhat_ls[[prune_mode]] <- tauhat
+    group_cates_ls[[prune_mode]] <- group_cates
+    tree_info_ls[[prune_mode]] <- tree_info
+    subgroups_ls[[prune_mode]] <- subgroups
+  }
 
   # Evaluate stability diagnostics
   stability_out <- causalDT::evaluate_subgroup_stability(
@@ -257,12 +341,17 @@ causal_tree <- function(X, Y, Z,
 
   out <- c(
     list(
-      fit = fit,
-      model_info = tree_info,
-      subgroups = subgroups,
-      group_cates = group_cates,
-      teacher_predictions = tauhat,
-      student_predictions = rep(NA_real_, length(tauhat)),  # dummy placeholder for now
+      est_data = list(
+        X = X,
+        Y = Y,
+        Z = Z
+      ),
+      fit = fit_ls,
+      model_info = tree_info_ls,
+      subgroups = subgroups_ls,
+      group_cates = group_cates_ls,
+      teacher_predictions = tauhat_ls,
+      student_predictions = rep(NA_real_, length(tauhat_ls[[1]])),  # dummy placeholder for now
       stability_diagnostics = stability_out,
       time_elapsed = as.numeric(difftime(end_time, start_time, units = "secs")),
       ...

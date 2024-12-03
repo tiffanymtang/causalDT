@@ -86,6 +86,15 @@ subgroup_cate_err_summary <- create_evaluator(
   )
 )
 
+subgroup_cate_err_max_depth2_summary <- create_evaluator(
+  .eval_fun = eval_subgroup_cate_err,
+  .name = "Subgroup CATE Errors Summary (max depth = 2)",
+  max_depth = 2,
+  custom_summary_funs = list(
+    "se_cate_err" = function(x) sd(x, na.rm = TRUE) / sqrt(sum(!is.na(x)))
+  )
+)
+
 subgroup_cate_err_eval <- create_evaluator(
   .eval_fun = eval_subgroup_cate_err,
   .name = "Subgroup CATE Errors",
@@ -93,7 +102,7 @@ subgroup_cate_err_eval <- create_evaluator(
 )
 
 #### Stability Diagnostic Evaluators ####
-subgroup_stability_eval <- create_evaluator(
-  .eval_fun = eval_stability_diagnostics,
-  .name = "Subgroup Stability Diagnostics"
-)
+# subgroup_stability_eval <- create_evaluator(
+#   .eval_fun = eval_stability_diagnostics,
+#   .name = "Subgroup Stability Diagnostics"
+# )

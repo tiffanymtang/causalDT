@@ -167,7 +167,7 @@ add_pruned_fits <- function(fit_results,
     dplyr::rowwise() |>
     dplyr::mutate(
       .method_name = paste0(.method_name, " (min-pruned)"),
-      pruned_results = list(prune_tree(fit, prune = "min"))
+      pruned_results = list(prune_tree(fit[[1]], prune = "min"))
     ) |>
     dplyr::select(tidyselect::all_of(keep_cols), pruned_results) |>
     tidyr::unnest(pruned_results, keep_empty = TRUE) |>
@@ -180,7 +180,7 @@ add_pruned_fits <- function(fit_results,
     dplyr::rowwise() |>
     dplyr::mutate(
       .method_name = paste0(.method_name, " (1se-pruned)"),
-      pruned_results = list(prune_tree(fit, prune = "1se"))
+      pruned_results = list(prune_tree(fit[[1]], prune = "1se"))
     ) |>
     dplyr::select(tidyselect::all_of(keep_cols), pruned_results) |>
     tidyr::unnest(pruned_results, keep_empty = TRUE) |>
@@ -194,27 +194,66 @@ add_pruned_fits <- function(fit_results,
 }
 
 
-add_best_distilled_method <- function(fit_results,
-                                      vary_params = NULL,
-                                      max_depths = 1:4) {
-  id_cols <- c(".rep", ".dgp_name", ".method_name", vary_params)
-  return(fit_results)
-
-  best_methods_df <- get_best_distilled_method_info(
-    fit_results,
-    vary_params = vary_params,
-    max_depths = max_depths
-  ) |>
-    dplyr::select(-jaccard, -cum_jaccard) |>
-    dplyr::left_join(fit_results, by = id_cols) |>
+unnest_fit_results <- function(fit_results) {
+  is_nested <- sapply(
+    fit_results$fit,
+    function(x) any(c("none", "min", "1se") %in% names(x))
+  )
+  if (!any(is_nested)) {
+    return(fit_results)
+  }
+  nontree_fit_results <- fit_results |>
+    dplyr::filter(
+      !stringr::str_detect(.method_name, "Distilled") &
+        !stringr::str_detect(.method_name, "Causal Tree")
+    )
+  tree_fit_results <- fit_results |>
+    dplyr::filter(
+      stringr::str_detect(.method_name, "Distilled") |
+        stringr::str_detect(.method_name, "Causal Tree")
+    ) |>
     dplyr::mutate(
-      .method_name = "Most Stable Distilled Method"
+      fit = purrr::map(fit, ~ list(none = .x$none, min = .x$min)),
+      model_info = purrr::map(model_info, ~ list(none = .x$none, min = .x$min)),
+      subgroups = purrr::map(subgroups, ~ list(none = .x$none, min = .x$min)),
+      group_cates = purrr::map(group_cates, ~ list(none = .x$none, min = .x$min)),
+      teacher_predictions = purrr::map2(
+        teacher_predictions, .method_name,
+        ~ if (stringr::str_detect(.y, "Causal Tree")) {
+          list("none" = .x$none, min = .x$min)
+        } else {
+          list("none" = .x, min = .x)
+        }
+      ),
+      student_predictions = purrr::map2(
+        student_predictions, .method_name,
+        ~ if (stringr::str_detect(.y, "Causal Tree")) {
+          list("none" = .x, min = .x)
+        } else {
+          list("none" = .x$none, min = .x$min)
+        }
+      )
     ) |>
-    tidyr::unite(
-      col = ".method_name", .method_name, depth, sep = " Depth "
+    tidyr::unnest_longer(
+      c(
+        fit, model_info, subgroups, group_cates,
+        teacher_predictions, student_predictions
+      )
     ) |>
-    dplyr::ungroup()
+    dplyr::mutate(
+      .method_name = dplyr::case_when(
+        fit_id == "none" ~ sprintf("%s (unpruned)", .method_name),
+        TRUE ~ .method_name
+      )
+    )
+  if (!isTRUE(all.equal(tree_fit_results$fit_id, tree_fit_results$model_info_id)) ||
+      !isTRUE(all.equal(tree_fit_results$fit_id, tree_fit_results$subgroups_id)) ||
+      !isTRUE(all.equal(tree_fit_results$fit_id, tree_fit_results$group_cates_id)) ||
+      !isTRUE(all.equal(tree_fit_results$fit_id, tree_fit_results$teacher_predictions_id)) ||
+      !isTRUE(all.equal(tree_fit_results$fit_id, tree_fit_results$student_predictions_id))) {
+    stop("Mismatch between fit_id, model_info_id, subgroups_id, group_cates_id, teacher_predictions_id, and student_predictions_id.")
+  }
 
-  fit_results <- dplyr::bind_rows(fit_results, best_methods_df)
+  fit_results <- dplyr::bind_rows(tree_fit_results, nontree_fit_results)
   return(fit_results)
 }

@@ -85,6 +85,7 @@ plot_subgroup_thresholds <- function(fit_results = NULL,
                                      eval_name = "Thresholds Summary",
                                      feature_col = ".var",
                                      rm_methods = c("Linear Regression", "Lasso"),
+                                     method_levels = NULL,
                                      show = c("violin", "boxplot"),
                                      show_true_vars_only = TRUE,
                                      show_true_threshold = TRUE,
@@ -98,22 +99,15 @@ plot_subgroup_thresholds <- function(fit_results = NULL,
     eval_results[[eval_name]] <- eval_results[[eval_name]] |>
       dplyr::filter(true_var)
   }
+  if (is.null(method_levels)) {
+    method_levels <- unique(eval_results[[eval_name]]$.method_name)
+  }
 
   plt_df <- eval_results[[eval_name]] |>
     tidyr::unnest_longer(raw_threshold) |>
     dplyr::mutate(
       .method_name = factor(
-        .method_name,
-        levels = c(
-          "Distilled Causal Forest",
-          "Distilled Rboost",
-          "Distilled Rlasso",
-          "Virtual Twins",
-          "Causal Tree (pruned)",
-          "Causal Tree (unpruned)",
-          "Linear Regression",
-          "Lasso"
-        )
+        .method_name, levels = method_levels
       )
     )
 
@@ -267,6 +261,7 @@ plot_subgroup_nsplits <- function(fit_results = NULL,
                                   vary_params = NULL,
                                   eval_name = "Thresholds Summary",
                                   rm_methods = NULL,
+                                  method_levels = NULL,
                                   type = c("n_splits_per_tree", "n_trees"),
                                   ...) {
 
@@ -277,6 +272,9 @@ plot_subgroup_nsplits <- function(fit_results = NULL,
   if (!is.null(rm_methods)) {
     eval_results[[eval_name]] <- eval_results[[eval_name]] |>
       dplyr::filter(!(.method_name %in% !!rm_methods))
+  }
+  if (is.null(method_levels)) {
+    method_levels <- unique(eval_results[[eval_name]]$.method_name)
   }
 
   plt_df <- eval_results[[eval_name]] |>
@@ -297,19 +295,7 @@ plot_subgroup_nsplits <- function(fit_results = NULL,
         tidyselect::all_of(type), ~ round(.x, 1)
       ),
       .method_name = factor(
-        .method_name,
-        levels = rev(
-          c(
-            "Distilled Causal Forest",
-            "Distilled Rboost",
-            "Distilled Rlasso",
-            "Virtual Twins",
-            "Causal Tree (pruned)",
-            "Causal Tree (unpruned)",
-            "Linear Regression",
-            "Lasso"
-          )
-        )
+        .method_name, levels = rev(method_levels)
       )
     )
   if (isTRUE(all(stringr::str_detect(plt_df$.var, "^X[0-9]+$")))) {
@@ -365,10 +351,6 @@ plot_subgroup_cates <- function(fit_results,
                                 ...) {
   show <- match.arg(show)
   id_cols <- c(".rep", ".dgp_name", ".method_name", vary_params)
-  fit_results <- add_best_distilled_method(
-    fit_results = fit_results,
-    vary_params = vary_params
-  )
 
   plt_df <- fit_results |>
     dplyr::select(
@@ -434,7 +416,7 @@ plot_stability_diagnostics <- function(fit_results,
   plt_df <- fit_results |>
     dplyr::filter(
       stringr::str_detect(.method_name, "Distilled") |
-        stringr::str_detect(.method_name, "Causal Tree \\(pruned\\)")
+        (.method_name == "Causal Tree")
     ) |>
     dplyr::mutate(
       jaccard = purrr::map(
@@ -549,7 +531,7 @@ plot_stability_diagnostics <- function(fit_results,
   feature_plt_df <- fit_results |>
     dplyr::filter(
       stringr::str_detect(.method_name, "Distilled") |
-        stringr::str_detect(.method_name, "Causal Tree \\(pruned\\)")
+        (.method_name == "Causal Tree")
     ) |>
     dplyr::mutate(
       feature_dist = purrr::map(stability_diagnostics, "feature_distribution")
@@ -582,7 +564,7 @@ plot_stability_diagnostics <- function(fit_results,
   plt3 <- feature_plt_df |>
     dplyr::filter(depth <= !!max_depth) |>
     dplyr::mutate(
-      .method_name = stringr::str_remove(.method_name, " \\(pruned\\)"),
+      # .method_name = stringr::str_remove(.method_name, " \\(pruned\\)"),
       depth = sprintf("Depth = %s", depth)
     ) |>
     ggplot2::ggplot() +

@@ -16,10 +16,7 @@ eval_subgroup_feature_selection_err <- function(fit_results,
     ".dgp_name", ".method_name", vary_params, group_cols, ".metric"
   )
 
-  fit_results <- add_best_distilled_method(
-    fit_results = fit_results,
-    vary_params = vary_params
-  )
+  fit_results <- unnest_fit_results(fit_results = fit_results)
 
   subgroup_feature_selection_err <- function(data) {
     true_vars <- names(data[["true_thresholds"]][[1]])
@@ -27,9 +24,6 @@ eval_subgroup_feature_selection_err <- function(fit_results,
     nsubgroups <- length(data[["subgroups"]][[1]])
     if (("node" %in% colnames(model_info)) && !is.null(max_depth)) {
       model_info <- model_info |>
-        dplyr::mutate(
-          depth = trunc(log(node, base = 2)) + 1
-        ) |>
         dplyr::filter(
           depth <= !!max_depth
         )
@@ -103,20 +97,13 @@ eval_subgroup_thresholds <- function(fit_results,
     ".dgp_name", ".method_name", vary_params, group_cols,
     ".var", "categorical", "true_var"
   )
-  nreps <- length(unique(fit_results$.rep))
 
-  fit_results <- add_best_distilled_method(
-    fit_results = fit_results,
-    vary_params = vary_params
-  )
+  fit_results <- unnest_fit_results(fit_results = fit_results)
 
   subgroup_thresholds <- function(data) {
     model_info <- data[["model_info"]][[1]]
     if (("node" %in% colnames(model_info)) && !is.null(max_depth)) {
       model_info <- model_info |>
-        dplyr::mutate(
-          depth = trunc(log(node, base = 2)) + 1
-        ) |>
         dplyr::filter(
           depth <= !!max_depth
         )
@@ -239,20 +226,13 @@ eval_subgroup_threshold_dist <- function(fit_results,
   group_vars <- c(
     ".dgp_name", ".method_name", vary_params, group_cols, ".var", ".metric"
   )
-  nreps <- length(unique(fit_results$.rep))
 
-  fit_results <- add_best_distilled_method(
-    fit_results = fit_results,
-    vary_params = vary_params
-  )
+  fit_results <- unnest_fit_results(fit_results = fit_results)
 
   subgroup_thresholds <- function(data) {
     model_info <- data[["model_info"]][[1]]
     if (("node" %in% colnames(model_info)) && !is.null(max_depth)) {
       model_info <- model_info |>
-        dplyr::mutate(
-          depth = trunc(log(node, base = 2)) + 1
-        ) |>
         dplyr::filter(
           depth <= !!max_depth
         )
@@ -323,6 +303,7 @@ eval_subgroup_threshold_dist <- function(fit_results,
 
 eval_subgroup_cate_err <- function(fit_results,
                                    vary_params = NULL,
+                                   max_depth = NULL,
                                    nested_cols = NULL,
                                    group_cols = NULL,
                                    na_rm = FALSE,
@@ -335,10 +316,7 @@ eval_subgroup_cate_err <- function(fit_results,
     ".dgp_name", ".method_name", vary_params, group_cols, ".metric"
   )
 
-  fit_results <- add_best_distilled_method(
-    fit_results = fit_results,
-    vary_params = vary_params
-  )
+  fit_results <- unnest_fit_results(fit_results = fit_results)
 
   subgroup_cate_err <- function(data) {
     holdout_idxs <- data[["holdout_idxs"]][[1]]
@@ -347,14 +325,51 @@ eval_subgroup_cate_err <- function(fit_results,
     if (is.null(group_cates)) {
       return(NULL)
     }
-    if (!is.null(holdout_idxs)) {
-      tau <- tau[holdout_idxs]
+    if (!is.null(max_depth)) {
+      fit <- data[["fit"]][[1]]
+      method_name <- data[[".method_name"]][[1]]
+      if (!("rpart" %in% class(fit))) {
+        return(NULL)
+      } else {
+        party_fit <- partykit::as.party(fit)
+        node_depths <- causalDT:::get_party_node_depths(party_fit)
+        if (any(node_depths > max_depth)) {
+          pruned_fit <- partykit::nodeprune(
+            party_fit, ids = names(node_depths)[node_depths == max_depth]
+          )
+        } else {
+          pruned_fit <- fit
+        }
+        if (stringr::str_detect(method_name, "Causal Tree")) {
+          tauhat <- predict(pruned_fit)
+          df <- tibble::tibble(truth = tau, estimate = tauhat)
+        } else {
+          group_cates <- causalDT::estimate_group_cates(
+            fit = pruned_fit,
+            X = data[["est_data"]][[1]][["X"]],
+            Y = data[["est_data"]][[1]][["Y"]],
+            Z = data[["est_data"]][[1]][["Z"]]
+          )
+          if (!is.null(holdout_idxs)) {
+            tau <- tau[holdout_idxs]
+          }
+          tauhat <- rep(NA, length(tau))
+          for (i in 1:nrow(group_cates)) {
+            tauhat[group_cates$.sample_idxs[[i]]] <- group_cates$estimate[[i]]
+          }
+          df <- tibble::tibble(truth = tau, estimate = tauhat)
+        }
+      }
+    } else {
+      if (!is.null(holdout_idxs)) {
+        tau <- tau[holdout_idxs]
+      }
+      tauhat <- rep(NA, length(tau))
+      for (i in 1:nrow(group_cates)) {
+        tauhat[group_cates$.sample_idxs[[i]]] <- group_cates$estimate[[i]]
+      }
+      df <- tibble::tibble(truth = tau, estimate = tauhat)
     }
-    tauhat <- rep(NA, length(tau))
-    for (i in 1:nrow(group_cates)) {
-      tauhat[group_cates$.sample_idxs[[i]]] <- group_cates$estimate[[i]]
-    }
-    df <- tibble::tibble(truth = tau, estimate = tauhat)
     metric_out <- yardstick::metrics(
       data = df, truth = truth, estimate = estimate, na_rm = TRUE
     )
@@ -380,38 +395,4 @@ eval_subgroup_cate_err <- function(fit_results,
   }
 
   return(eval_summary)
-}
-
-
-eval_stability_diagnostics <- function(fit_results,
-                                       vary_params = NULL,
-                                       max_depths = 1:4) {
-
-  best_methods_df <- get_best_distilled_method_info(
-    fit_results,
-    vary_params = vary_params,
-    max_depths = max_depths
-  )
-
-  best_methods_summary <- best_methods_df |>
-    dplyr::group_by(
-      dplyr::across(
-        tidyselect::all_of(c(".dgp_name", ".method_name", vary_params, "depth"))
-      )
-    ) |>
-    dplyr::summarize(
-      n = dplyr::n(),
-      .groups = "drop"
-    ) |>
-    tidyr::pivot_wider(
-      names_from = .method_name,
-      values_from = n
-    )
-
-  return(
-    list(
-      "Best Distilled Methods" = best_methods_df,
-      "Best Distilled Methods Summary" = best_methods_summary
-    )
-  )
 }

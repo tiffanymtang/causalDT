@@ -1,3 +1,17 @@
+method_levels <- c(
+  "Distilled Causal Forest",
+  "Distilled Causal Forest (unpruned)",
+  "Distilled Rboost",
+  "Distilled Rboost (unpruned)",
+  "Distilled Rlasso",
+  "Distilled Rlasso (unpruned)",
+  "Virtual Twins",
+  "Causal Tree",
+  "Causal Tree (unpruned)",
+  "Linear Regression",
+  "Lasso"
+)
+
 num_subgroups_plot <- create_visualizer(
   .viz_fun = plot_subgroup_feature_selection_err,
   .name = "Number of Subgroups Plot",
@@ -8,7 +22,7 @@ num_subgroups_plot <- create_visualizer(
     alpha = 0.2
   ),
   line_args = list(
-    size = 0.7
+    size = 1.1
   )
 )
 
@@ -68,6 +82,7 @@ subgroup_feature_selection_err_max_depth4_plot <- create_visualizer(
 subgroup_thresholds_plot <- create_visualizer(
   .viz_fun = plot_subgroup_thresholds,
   .name = "Subgroup Thresholds Distribution Plot",
+  method_levels = method_levels,
   size_preset = "medium"
 )
 
@@ -75,24 +90,28 @@ subgroup_thresholds_max_depth2_plot <- create_visualizer(
   .viz_fun = plot_subgroup_thresholds,
   .name = "Subgroup Thresholds Distribution Plot (max depth = 2)",
   eval_name = "Thresholds Summary (max depth = 2)",
+  method_levels = method_levels,
   size_preset = "medium"
 )
 subgroup_thresholds_max_depth3_plot <- create_visualizer(
   .viz_fun = plot_subgroup_thresholds,
   .name = "Subgroup Thresholds Distribution Plot (max depth = 3)",
   eval_name = "Thresholds Summary (max depth = 3)",
+  method_levels = method_levels,
   size_preset = "medium"
 )
 subgroup_thresholds_max_depth4_plot <- create_visualizer(
   .viz_fun = plot_subgroup_thresholds,
   .name = "Subgroup Thresholds Distribution Plot (max depth = 4)",
   eval_name = "Thresholds Summary (max depth = 4)",
+  method_levels = method_levels,
   size_preset = "medium"
 )
 
 subgroup_thresholds_errorbar_plot <- create_visualizer(
   .viz_fun = plot_subgroup_thresholds,
   .name = "Subgroup Thresholds Distribution Plot (errorbar)",
+  method_levels = method_levels,
   show = c("point", "errorbar"),
   size_preset = "medium"
 )
@@ -164,6 +183,15 @@ subgroup_threshold_dist_max_depth4_plot <- create_visualizer(
 subgroup_nsplits_plot <- create_visualizer(
   .viz_fun = plot_subgroup_nsplits,
   .name = "Number of Splits Plot",
+  method_levels = method_levels,
+  type = "n_splits_per_tree",
+  size_preset = "medium"
+)
+subgroup_nsplits_max_depth2_plot <- create_visualizer(
+  .viz_fun = plot_subgroup_nsplits,
+  .name = "Number of Splits Plot (max depth = 2)",
+  eval_name = "Thresholds Summary (max depth = 2)",
+  method_levels = method_levels,
   type = "n_splits_per_tree",
   size_preset = "medium"
 )
@@ -171,6 +199,15 @@ subgroup_nsplits_plot <- create_visualizer(
 subgroup_ntrees_plot <- create_visualizer(
   .viz_fun = plot_subgroup_nsplits,
   .name = "Number of Trees Plot",
+  method_levels = method_levels,
+  type = "n_trees",
+  size_preset = "medium"
+)
+subgroup_ntrees_max_depth2_plot <- create_visualizer(
+  .viz_fun = plot_subgroup_nsplits,
+  .name = "Number of Trees Plot (max depth = 2)",
+  eval_name = "Thresholds Summary (max depth = 2)",
+  method_levels = method_levels,
   type = "n_trees",
   size_preset = "medium"
 )
@@ -184,6 +221,22 @@ subgroup_cates_err_plot <- create_visualizer(
   .viz_fun = plot_pred_err,
   .name = "Subgroup CATE Errors Plot",
   eval_name = "Subgroup CATE Errors Summary",
+  eval_id = "cate_err",
+  show = c("point", "line", "ribbon"),
+  metrics = yardstick::metric_set(yardstick::rmse),
+  err_sd_str = "se_cate_err",
+  ribbon_args = list(
+    alpha = 0.2
+  ),
+  line_args = list(
+    size = 0.7
+  )
+)
+
+subgroup_cates_err_max_depth2_plot <- create_visualizer(
+  .viz_fun = plot_pred_err,
+  .name = "Subgroup CATE Errors Plot (max depth = 2)",
+  eval_name = "Subgroup CATE Errors Summary (max depth = 2)",
   eval_id = "cate_err",
   show = c("point", "line", "ribbon"),
   metrics = yardstick::metric_set(yardstick::rmse),
