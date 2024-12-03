@@ -136,7 +136,10 @@ estimate_group_cates <- function(fit, X, Y, Z) {
       leaf_ids <- predict(fit, h2o::as.h2o(data.frame(X)), type = 'node') |>
         as.vector()
     } else {
-      leaf_ids <- predict(fit, data.frame(X), type = 'node')
+      leaf_ids <- tryCatch(
+        predict(fit, data.frame(X), type = 'node'),
+        error = function(e) as.numeric(as.factor(predict(fit, data.frame(X))))
+      )
     }
   } else {
     leaf_ids <- NULL
