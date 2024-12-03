@@ -10,7 +10,9 @@ estimate_group_cates(fit, X, Y, Z)
 \item{fit}{Fitted subgroup model used to determine subgroup membership of
 individuals. Typically, this is a \code{party} or \code{rpart} object, but any model
 object that can be used to determine subgroup membership via
-\code{predict(fit, x, type = 'node')} can be used.}
+\code{predict(fit, x, type = 'node')} can be used. If
+\code{predict(fit, x, type = 'node')} returns an error, then subgroups are
+determined based upon the unique values of \code{predict(fit, x)}.}
 
 \item{X}{A tibble, data.frame, or matrix of covariates.}
 
