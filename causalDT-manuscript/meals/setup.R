@@ -28,6 +28,8 @@ cat(sprintf("Saving results to: %s\n", SAVE_DIR))
 
 FUTURE_GLOBALS <- c(
   "dummy_code", "causaltree_wrapper", "get_interaction_formula",
-  "tidy_lm", "tidy_glmnet", "get_lm_info", "get_lm_subgroups"
+  "tidy_lm", "tidy_glmnet", "get_lm_info", "get_lm_subgroups",
+  "student_rulefit", "get_rulefit_str", "get_rulefit_subgroups",
+  "clean_pre_rules"
 )
 FUTURE_PACKAGES <- c("causalDT", "causalTree")

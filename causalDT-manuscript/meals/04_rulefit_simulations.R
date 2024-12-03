@@ -4,7 +4,7 @@ N_REPS <- 100
 SAVE <- TRUE
 # USE_CACHED <- FALSE
 USE_CACHED <- TRUE
-CHECKPOINT_N_REPS <- 10
+CHECKPOINT_N_REPS <- 0
 set.seed(331)
 
 source(here::here(file.path("meals", "setup.R")))
