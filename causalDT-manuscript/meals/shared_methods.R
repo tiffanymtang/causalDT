@@ -29,7 +29,7 @@ distilled_causal_forest_rulefit_v1_method <- create_method(
   .name = "Distilled Causal Forest (rulefit v1)",
   teacher_model = "causal_forest",
   student_model = "rulefit",
-  rulefit_args = list(seed = 1)
+  rulefit_args = NULL
 )
 
 distilled_causal_forest_rulefit_v2_method <- create_method(
@@ -37,9 +37,7 @@ distilled_causal_forest_rulefit_v2_method <- create_method(
   .name = "Distilled Causal Forest (rulefit v2)",
   teacher_model = "causal_forest",
   student_model = "rulefit",
-  rulefit_args = list(
-    seed = 1, min_rule_length = 2, max_rule_length = 2
-  )
+  rulefit_args = list(maxdepth = 2)
 )
 
 distilled_causal_forest_rulefit_v3_method <- create_method(
@@ -47,9 +45,7 @@ distilled_causal_forest_rulefit_v3_method <- create_method(
   .name = "Distilled Causal Forest (rulefit v3)",
   teacher_model = "causal_forest",
   student_model = "rulefit",
-  rulefit_args = list(
-    seed = 1, min_rule_length = 2, max_rule_length = 2, max_num_rules = 4
-  )
+  rulefit_args = list(type = "rules")
 )
 
 distilled_causal_forest_rulefit_v4_method <- create_method(
@@ -57,28 +53,7 @@ distilled_causal_forest_rulefit_v4_method <- create_method(
   .name = "Distilled Causal Forest (rulefit v4)",
   teacher_model = "causal_forest",
   student_model = "rulefit",
-  rulefit_args = list(seed = 1, model_type = "rules")
-)
-
-distilled_causal_forest_rulefit_v5_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Causal Forest (rulefit v5)",
-  teacher_model = "causal_forest",
-  student_model = "rulefit",
-  rulefit_args = list(
-    seed = 1, min_rule_length = 2, max_rule_length = 2, model_type = "rules"
-  )
-)
-
-distilled_causal_forest_rulefit_v6_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Causal Forest (rulefit v6)",
-  teacher_model = "causal_forest",
-  student_model = "rulefit",
-  rulefit_args = list(
-    seed = 1, min_rule_length = 2, max_rule_length = 2, max_num_rules = 4,
-    model_type = "rules"
-  )
+  rulefit_args = list(type = "rules", maxdepth = 2)
 )
 
 # with stability diagnostics

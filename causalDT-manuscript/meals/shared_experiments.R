@@ -45,8 +45,6 @@ rulefit_experiment <- create_experiment(
   add_method(distilled_causal_forest_rulefit_v2_method) |>
   add_method(distilled_causal_forest_rulefit_v3_method) |>
   add_method(distilled_causal_forest_rulefit_v4_method) |>
-  add_method(distilled_causal_forest_rulefit_v5_method) |>
-  add_method(distilled_causal_forest_rulefit_v6_method) |>
   ### evaluators
   add_evaluator(subgroup_feature_selection_errors_summary) |>
   add_evaluator(subgroup_thresholds_summary) |>

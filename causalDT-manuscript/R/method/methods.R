@@ -6,7 +6,7 @@ causalDT_method <- function(X, Y, Z,
                             student_model = "rpart",
                             rpart_control = NULL,
                             rpart_prune = c("none", "min", "1se"),
-                            rulefit_args = list(seed = 1),
+                            rulefit_args = NULL,
                             nfolds_crossfit = NULL,
                             nreps_crossfit = NULL,
                             B_stability = 0,
@@ -24,11 +24,10 @@ causalDT_method <- function(X, Y, Z,
   }
 
   if (identical(student_model, "rulefit")) {
-    student_model <- purrr::partial(
-      student_rulefit,
-      rulefit_args = rulefit_args
+    student_model <- do.call(
+      purrr::partial,
+      args = c(list(.f = student_rulefit), rulefit_args)
     )
-    # h2o::h2o.init()
   }
 
   start_time <- Sys.time()
@@ -120,10 +119,6 @@ causalDT_method <- function(X, Y, Z,
       max_depth_stability = max_depth_stability,
       causalDT_args = causalDT_args
     )
-  }
-
-  if (identical(student_model, "rulefit")) {
-    # h2o::h2o.shutdown(prompt = FALSE)
   }
 
   detailed_out <- NULL
