@@ -23,6 +23,64 @@ distilled_rlasso_method <- create_method(
   rpart_prune = "min"
 )
 
+# rulefit methods without stability diagnostics
+distilled_causal_forest_rulefit_v1_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (rulefit v1)",
+  teacher_model = "causal_forest",
+  student_model = "rulefit",
+  rulefit_args = list(seed = 1)
+)
+
+distilled_causal_forest_rulefit_v2_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (rulefit v2)",
+  teacher_model = "causal_forest",
+  student_model = "rulefit",
+  rulefit_args = list(
+    seed = 1, min_rule_length = 2, max_rule_length = 2
+  )
+)
+
+distilled_causal_forest_rulefit_v3_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (rulefit v3)",
+  teacher_model = "causal_forest",
+  student_model = "rulefit",
+  rulefit_args = list(
+    seed = 1, min_rule_length = 2, max_rule_length = 2, max_num_rules = 4
+  )
+)
+
+distilled_causal_forest_rulefit_v4_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (rulefit v4)",
+  teacher_model = "causal_forest",
+  student_model = "rulefit",
+  rulefit_args = list(seed = 1, model_type = "rules")
+)
+
+distilled_causal_forest_rulefit_v5_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (rulefit v5)",
+  teacher_model = "causal_forest",
+  student_model = "rulefit",
+  rulefit_args = list(
+    seed = 1, min_rule_length = 2, max_rule_length = 2, model_type = "rules"
+  )
+)
+
+distilled_causal_forest_rulefit_v6_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (rulefit v6)",
+  teacher_model = "causal_forest",
+  student_model = "rulefit",
+  rulefit_args = list(
+    seed = 1, min_rule_length = 2, max_rule_length = 2, max_num_rules = 4,
+    model_type = "rules"
+  )
+)
+
 # with stability diagnostics
 distilled_causal_forest_stability_method <- create_method(
   .method_fun = causalDT_method,

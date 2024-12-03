@@ -36,6 +36,30 @@ experiment <- create_experiment(
   add_visualizer(subgroup_cates_err_max_depth2_plot) |>
   add_visualizer(subgroup_stability_plot)
 
+rulefit_experiment <- create_experiment(
+  name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results", EXP_NAME)
+) |>
+  ### distillation methods
+  add_method(distilled_causal_forest_method) |>
+  add_method(distilled_causal_forest_rulefit_v1_method) |>
+  add_method(distilled_causal_forest_rulefit_v2_method) |>
+  add_method(distilled_causal_forest_rulefit_v3_method) |>
+  add_method(distilled_causal_forest_rulefit_v4_method) |>
+  add_method(distilled_causal_forest_rulefit_v5_method) |>
+  add_method(distilled_causal_forest_rulefit_v6_method) |>
+  ### evaluators
+  add_evaluator(subgroup_feature_selection_errors_summary) |>
+  add_evaluator(subgroup_thresholds_summary) |>
+  add_evaluator(subgroup_threshold_dist_summary) |>
+  add_evaluator(subgroup_cate_err_summary) |>
+  ### visualizers
+  add_visualizer(subgroup_feature_selection_err_plot) |>
+  add_visualizer(subgroup_thresholds_plot) |>
+  add_visualizer(subgroup_threshold_dist_plot) |>
+  add_visualizer(subgroup_nsplits_plot) |>
+  add_visualizer(subgroup_ntrees_plot) |>
+  add_visualizer(subgroup_cates_err_plot)
+
 old_experiment <- create_experiment(
   name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results", EXP_NAME)
 ) |>

@@ -132,7 +132,12 @@ estimate_group_cates <- function(fit, X, Y, Z) {
     if ("rpart" %in% class(fit)) {
       fit <- partykit::as.party(fit)
     }
-    leaf_ids <- predict(fit, data.frame(X), type = 'node')
+    if ("H2ORegressionModel" %in% class(fit)) {
+      leaf_ids <- predict(fit, h2o::as.h2o(data.frame(X)), type = 'node') |>
+        as.vector()
+    } else {
+      leaf_ids <- predict(fit, data.frame(X), type = 'node')
+    }
   } else {
     leaf_ids <- NULL
   }
