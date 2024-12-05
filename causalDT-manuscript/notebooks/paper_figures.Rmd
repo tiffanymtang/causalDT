@@ -11,50 +11,67 @@ knitr::opts_chunk$set(
   message = FALSE
 )
 
-KEEP_METHODS <- c(
-  "Distilled Causal Forest",
-  "Distilled Rboost",
-  "Distilled Rlasso",
-  "Virtual Twins",
-  "Causal Tree (pruned)",
-  "Causal Tree (unpruned)",
-  "Linear Regression",
-  "Lasso"
-)
 COLORS <- c(
-  # "Distilled Causal Forest" = "#3153A5",
   "Distilled Causal Forest" = "#1f5d8f",
-  # "Distilled Causal Forest" = "#5d8cae",
-  # "Distilled Rboost" = "#94B1c9",
-  # "Distilled Rboost" = "#678096",
-  ## "Distilled Rboost" = "#79b2dd",
   "Distilled Rboost" = "#6aafe4",
-  # "Distilled Rboost" = "#6DA7D3",
-  # "Distilled Rboost" = "#6DA7D3",
-  # "Distilled Rlasso" = "#ACC2D0",
-  "Distilled Rlasso" = "#9ab6c8",
-  # "Distilled Rlasso" = "#B8CEDD",
   "Virtual Twins" = "#768c50",
-  # "Virtual Twins" = "#6F9940",
-  "Causal Tree (pruned)" = "#953a2f",
-  "Causal Tree (unpruned)" = "#DB9685",
-  # "Linear Regression" = "#DAA520",
+  "Causal Tree" = "#953a2f",
   "Linear Regression" = "#b2954a",
   "Lasso" = "#D2BE90"
-  # "Lasso" = "#e4d2a4"
+)
+CROSSFIT_COLORS <- c(
+  "#981643", "#ED724F", "#F8B06E", "#FCE096", "#8FB989", "#4287B7", "#5E519B"
+)
+RULEFIT_COLORS <- c(
+  "CART" = "#1f5d8f",
+  "Rulefit (both, max depth = 3)" = "#FF9300",
+  "Rulefit (both, max depth = 2)" = "#E7298A",
+  "Rulefit (rules only, max depth = 3)" = "#66A61E",
+  "Rulefit (rules only, max depth = 2)" = "#7570B3"
+)
+LINETYPES <- c(
+  "Pruned" = "solid",
+  "Unpruned" = "dashed"
 )
 
 FACET_LABS <- list(
-  "0.2" = "Weak",
-  "0.6" = "Moderate",
-  "1" = "High"
+  "0.2" = "Weak (0.2)",
+  "0.6" = "Moderate (0.6)",
+  "1" = "Strong (1)"
 )
 signal_labeller <- function(variable, value) {
   if (variable == "tau_heritability") {
     return(FACET_LABS[as.character(value)])
+  } else if (variable == "metric") {
+    return(METRIC_LABS[as.character(value)])
   } else {
     return(value)
   }
+}
+
+add_pruned_column <- function(data) {
+  data |> 
+    dplyr::mutate(
+      .is_pruned = dplyr::case_when(
+        stringr::str_detect(.method_name, "unpruned") ~ "Unpruned",
+        TRUE ~ "Pruned"
+      ),
+      .method_name = stringr::str_remove(.method_name, " \\(unpruned\\)")
+    )
+}
+
+rename_rulefit_methods <- function(data) {
+  data <- data |> 
+    dplyr::mutate(
+      .method_name = dplyr::case_when(
+        .method_name == "Distilled Causal Forest" ~ "CART",
+        .method_name == "Distilled Causal Forest (rulefit v1)" ~ "Rulefit (both, max depth = 3)",
+        .method_name == "Distilled Causal Forest (rulefit v2)" ~ "Rulefit (both, max depth = 2)",
+        .method_name == "Distilled Causal Forest (rulefit v3)" ~ "Rulefit (rules only, max depth = 3)",
+        .method_name == "Distilled Causal Forest (rulefit v4)" ~ "Rulefit (rules only, max depth = 2)",
+      )
+    )
+  return(data)
 }
 
 FIG_DIR <- here::here("results", "figures")
@@ -79,10 +96,35 @@ experiment <- experiment |>
     .dgp = gaussian_X_unbiased_Z_and$name,
     tau_heritability = c(0.2, 0.4, 0.6, 0.8, 1)
   )
+
+example_experiment <- example_experiment |>
+  add_dgp(gaussian_X_unbiased_Z_and) |>
+  add_vary_across(
+    .dgp = gaussian_X_unbiased_Z_and$name,
+    n = c(100, 500, 1000, 2000)
+  )
+
+crossfit_experiment <- crossfit_experiment |>
+  add_dgp(gaussian_X_unbiased_Z_and) |>
+  add_vary_across(
+    .dgp = gaussian_X_unbiased_Z_and$name,
+    tau_heritability = c(0.2, 0.4, 0.6, 0.8, 1)
+  )
+
+rulefit_experiment <- rulefit_experiment |> 
+  add_dgp(gaussian_X_unbiased_Z_and) |>
+  add_vary_across(
+    .dgp = gaussian_X_unbiased_Z_and$name,
+    tau_heritability = c(0.2, 0.4, 0.6, 0.8, 1)
+  )
 ```
 
+## Toy Example {.tabset .tabset-pills .tabset-pills-square}
 
 ```{r results = "asis"}
+sim_results_dir <- here::here(
+  file.path("results", "Main Simulations")
+)
 sim_names <- c(
   "AND DGP",
   "Additive DGP",
@@ -91,170 +133,167 @@ sim_names <- c(
   "Additive with Linear Covariates DGP",
   "OR with Linear Covariates DGP"
 )
-sim_results_dir <- here::here(
-  file.path("results", "Unbiased W")
+
+keep_methods_ls <- list(
+  "causal_tree_only" = c("Causal Tree"),
+  "all_methods" = c("Distilled Causal Forest", "Causal Tree")
 )
 
-plt_subgroup_ls <- list()
-plt_subgroup2_ls <- list()
-plt_thresholds_ls <- list()
-plt_stability_ls <- list()
-plt_freq_ls <- list()
-for (sim_name in sim_names) {
-  cat(sprintf("\n\n## %s {.tabset .tabset-pills .tabset-square}\n\n", sim_name))
-  
-  # fit_results <- readRDS(
-  #   file.path(sim_results_dir, sim_name, "Varying tau_heritability", "fit_results.rds")
-  # ) |>
-  #   dplyr::filter(
-  #     .method_name %in% !!KEEP_METHODS
-  #   )
-  # eval_results <- evaluate_experiment(experiment, fit_results)
-  # viz_results <- visualize_experiment(experiment, fit_results, eval_results)
-  # 
-  # plt_selection <- viz_results$`Subgroup Feature Selection Errors Plot` +
-  #   ggplot2::scale_color_manual(
-  #     breaks = KEEP_METHODS,
-  #     values = COLORS
-  #   ) +
-  #   ggplot2::scale_fill_manual(
-  #     breaks = KEEP_METHODS,
-  #     values = COLORS
-  #   )
-  # 
-  # plt_cate <- viz_results$`Subgroup CATE Errors Plot` +
-  #   ggplot2::scale_color_manual(
-  #     breaks = KEEP_METHODS,
-  #     values = COLORS
-  #   ) +
-  #   ggplot2::scale_fill_manual(
-  #     breaks = KEEP_METHODS,
-  #     values = COLORS
-  #   ) +
-  #   ggplot2::labs(
-  #     y = "CATE RMSE"
-  #   ) +
-  #   vthemes::theme_vmodern(
-  #     axis_title_size = 16,
-  #     axis_text_size = 12,
-  #     legend_title_size = 16,
-  #     legend_text_size = 12
-  #   ) +
-  #   ggplot2::theme(
-  #     strip.background = ggplot2::element_blank(),
-  #     strip.placement = "outside"
-  #     # strip.background = ggplot2::element_rect(
-  #     #   color = "transparent", fill = "transparent"
-  #     # ),
-  #     # strip.text = ggplot2::element_text(
-  #     #   color = "black", face = "bold", size = 16
-  #     # )
-  #   ) +
-  #   ggplot2::guides(
-  #     color = "none", fill = "none"
-  #   )
-  # 
-  # pplt <- patchwork::wrap_plots(
-  #   plt_selection, plt_cate, nrow = 1, guides = "collect",
-  #   widths = c(3.5, 1)
-  # ) &
-  #   ggplot2::labs(x = NULL)
-  # plt_subgroup_ls[[sim_name]] <- pplt
-  # plt <- patchwork::wrap_elements(pplt) +
-  #   ggplot2::labs(
-  #     tag = expression(
-  #       bold(paste("Proportion of Variance Explained in ", tau))
-  #     )
-  #   ) +
-  #   ggplot2::theme(
-  #     plot.tag = ggplot2::element_text(
-  #       size = 16
-  #     ),
-  #     plot.tag.position = c(0.45, 0),
-  #     plot.margin = ggplot2::unit(c(-0.1, 0, .2, -0.1), units = "in")
-  #   )
-  # plt_subgroup2_ls[[sim_name]] <- plt
-  
-  fit_results <- readRDS(
-    file.path(sim_results_dir, sim_name, "Varying tau_heritability", "fit_results.rds")
-  ) |>
-    dplyr::filter(
-      .method_name %in% !!KEEP_METHODS,
-      tau_heritability %in% c(0.2, 0.6, 1)
+for (keep_methods_idx in 1:length(keep_methods_ls)) {
+  keep_methods <- keep_methods_ls[[keep_methods_idx]]
+  keep_methods_name <- names(keep_methods_ls)[keep_methods_idx]
+  for (sim_name in sim_names) {
+    fit_results <- readRDS(
+      file.path(
+        sim_results_dir, sim_name, "Varying n", "fit_results.rds"
+      )
     )
-  eval_results <- evaluate_experiment(experiment, fit_results)
-  viz_results <- visualize_experiment(experiment, fit_results, eval_results)
-  
-  plt_thresholds <- viz_results$`Subgroup Thresholds Distribution Plot` +
-    ggplot2::scale_color_manual(
-      breaks = KEEP_METHODS,
-      values = COLORS,
-      labels = stringr::str_remove(KEEP_METHODS, " \\(pruned\\)")
-    ) +
-    ggplot2::scale_fill_manual(
-      breaks = KEEP_METHODS,
-      values = COLORS,
-      labels = stringr::str_remove(KEEP_METHODS, " \\(pruned\\)")
-    ) +
-    ggplot2::facet_grid(.var ~ tau_heritability, labeller = signal_labeller)
-  plt_thresholds_ls[[sim_name]] <- plt_thresholds
-  
-  plt_stability <- viz_results$`Subgroup Stability Diagnostics Plot`[[1]] +
-    ggplot2::scale_color_manual(
-      breaks = KEEP_METHODS,
-      values = COLORS,
-      labels = stringr::str_remove(KEEP_METHODS, " \\(pruned\\)")
-    ) +
-    ggplot2::scale_fill_manual(
-      breaks = KEEP_METHODS,
-      values = COLORS,
-      labels = stringr::str_remove(KEEP_METHODS, " \\(pruned\\)")
-    ) +
-    ggplot2::facet_grid(~ tau_heritability, labeller = signal_labeller) +
-    ggplot2::coord_cartesian(xlim = c(1, 4)) +
-    ggplot2::scale_x_continuous(
-      breaks = 1:4
-    ) +
-    ggplot2::labs(
-      x = "Tree Depth",
-      y = "Mean Jaccard Stability",
-      color = "Method",
-      fill = "Method"
-    ) +
-    vthemes::theme_vmodern(size_preset = "medium")
-  plt_stability_ls[[sim_name]] <- plt_stability
-  
-  plt_nsplits <- viz_results$`Number of Splits Plot` +
-    ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
-    viridis::scale_fill_viridis(
-      begin = 0.05, end = 1, option = "magma", limits = c(0., 7)
+    eval_results <- readRDS(
+      file.path(
+        sim_results_dir, sim_name, "Varying n", "eval_results.rds"
+      )
     )
-  plt_ntrees <- viz_results$`Number of Trees Plot` +
-    ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
-    viridis::scale_fill_viridis(
-      begin = 0.05, end = 1, option = "magma", limits = c(0, 100)
+    viz_results <- visualize_experiment(
+      example_experiment, fit_results, eval_results
     )
-  plt <- patchwork::wrap_plots(
-    plt_ntrees, plt_nsplits, nrow = 1
-  ) +
-    patchwork::plot_layout(
-      axis_titles = "collect_y"
-    ) &
-    ggplot2::labs(
-      x = "Variable"
+  
+    plt <- viz_results$`Number of Subgroups Plot`
+    plt$data <- plt$data |> 
+      dplyr::filter(
+        .method_name %in% !!keep_methods
+      )
+    plt <- plt +
+      ggplot2::scale_color_manual(
+        breaks = keep_methods,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = keep_methods,
+        values = COLORS
+      ) +
+      ggplot2::labs(
+        x = "Sample Size"
+      ) +
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98")
+      )
+    ggplot2::ggsave(
+      plt, 
+      filename = file.path(
+        FIG_DIR, 
+        sprintf("sim_example_nsubgroup_%s.pdf", keep_methods_name)
+      ),
+      height = 3.1,
+      width = 11.5
     )
-    
-  plt_freq_ls[[sim_name]] <- plt
+  }
 }
 ```
 
+## Main Simulations {.tabset .tabset-pills .tabset-pills-square}
+
+```{r results = "asis"}
+sim_results_dir <- here::here(
+  file.path("results", "Main Simulations")
+)
+SIM_NAMES <- c(
+  "AND DGP" = "AND DGP",
+  "Additive DGP" = "Additive DGP",
+  "OR DGP" = "OR DGP",
+  "AND with Linear Covariates DGP" = "AND DGP with Linear Covariates",
+  "Additive with Linear Covariates DGP" = "Additive DGP with Linear Covariates",
+  "OR with Linear Covariates DGP" = "OR DGP with Linear Covariates"
+)
+
+# load in results
+eval_results_ls <- list()
+viz_results_ls <- list()
+for (sim_name in names(SIM_NAMES)) {
+  fit_results <- readRDS(
+    file.path(
+      sim_results_dir, sim_name, "Varying tau_heritability", "fit_results.rds"
+    )
+  )
+  eval_results <- readRDS(
+    file.path(
+      sim_results_dir, sim_name, "Varying tau_heritability", "eval_results.rds"
+    )
+  )
+  viz_results <- visualize_experiment(experiment, fit_results, eval_results)
+  eval_results_ls[[SIM_NAMES[[sim_name]]]] <- eval_results
+  viz_results_ls[[SIM_NAMES[[sim_name]]]] <- viz_results
+}
+```
+
+### Selected Subgroup Features + Estimated Subgroup CATEs
+
 ```{r}
-plt_subgroup <- purrr::map2(
-  plt_subgroup_ls[1:3], 1:3,
-  function(plt, idx) {
-    sim_name <- names(plt_subgroup_ls[idx])
-    tag <- LETTERS[idx]
-    if (sim_name != names(plt_subgroup_ls[2])) {
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Rboost",
+  "Virtual Twins",
+  "Causal Tree",
+  "Linear Regression",
+  "Lasso"
+)
+
+## without covariates
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::map(
+  sim_names,
+  function(sim_name) {
+    plt_name <- stringr::str_replace(sim_name, "with ", "with\n")
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Feature Selection Errors Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      )
+    plt_selection <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Subgroup CATE Errors Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      )
+    plt_cate <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::labs(
+        y = "CATE RMSE"
+      ) +
+      ggplot2::theme(
+        strip.background = ggplot2::element_blank(),
+        strip.placement = "outside",
+        axis.title.y = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(face = "bold", size = 16),
+        legend.text = ggplot2::element_text(size = 12)
+      )
+    plt <- patchwork::wrap_plots(
+      plt_selection, plt_cate, nrow = 1, guides = "collect", widths = c(3.5, 1)
+    ) &
+      ggplot2::labs(x = NULL)
+    
+    if (sim_name != sim_names[2]) {
       plt <- plt &
         ggplot2::guides(
           color = "none", fill = "none"
@@ -263,32 +302,35 @@ plt_subgroup <- purrr::map2(
     } else {
       hjust <- 0.82
     }
+    if (sim_name == sim_names[1]) {
+      plt[[1]] <- plt[[1]] +
+        ggplot2::labs(
+          title = "(A) Selected Subgroup Features"
+        )
+      plt[[2]] <- plt[[2]] +
+        ggplot2::labs(
+          title = "(B) Estimated Subgroup CATEs"
+        )
+    }
     plt[[1]] <- plt[[1]] +
       ggplot2::labs(
-        tag = sprintf("(%s) %s", tag, sim_name)
+        tag = plt_name
       ) +
       ggplot2::theme(
         plot.tag = ggplot2::element_text(
           size = 18, face = "italic", angle = 90, hjust = 0.5, vjust = 1
         ),
         plot.tag.position = c(-.03, 0.48),
-        plot.margin = ggplot2::unit(c(-0.1, 0, 0, 0.5), units = "in")
+        plot.margin = ggplot2::unit(c(0, 0.35, 0, 0.5), units = "in")
       )
     plt <- plt &
       ggplot2::theme(
-        panel.background = ggplot2::element_rect(
-          fill = "grey98"
-        ),
-        panel.grid.major = ggplot2::element_line(
-          color = "grey98"
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5, vjust = -1
         )
       )
-      # ggplot2::theme(
-      #   plot.title = ggplot2::element_text(
-      #     size = 16, face = "bold", hjust = hjust
-      #   ),
-      #   plot.title.position = "plot"
-      # )
     return(plt)
   }
 ) |>
@@ -298,33 +340,79 @@ plt_subgroup <- purrr::map2(
   patchwork::wrap_elements() +
   ggplot2::labs(
     tag = expression(
-      bold(paste("Proportion of Variance Explained in ", tau))
+      bold(paste("Proportion of Variance Explained in ", tau, " by Covariates"))
     )
   ) +
   ggplot2::theme(
     plot.tag = ggplot2::element_text(
       size = 16
     ),
-    plot.tag.position = c(0.45, 0),
+    plot.tag.position = c(0.5, 0),
     plot.margin = ggplot2::unit(c(-0.1, 0, .2, -0.1), units = "in")
   )
 ggplot2::ggsave(
-  plt_subgroup, 
+  plt, 
   filename = file.path(FIG_DIR, "sim_subgroup_errors.pdf"),
   height = 9, 
   width = 14
 )
 
-plt_subgroup_cov <- purrr::map2(
-  plt_subgroup_ls[4:6], 4:6,
-  function(plt, idx) {
-    sim_name_orig <- names(plt_subgroup_ls[idx])
-    sim_name <- stringr::str_replace(
-      sim_name_orig, "with", "DGP with\n"
-    ) |>
-      stringr::str_remove(" DGP$")
-    tag <- LETTERS[idx - 3]
-    if (sim_name_orig != names(plt_subgroup_ls[5])) {
+## with covariates
+sim_names <- c(
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::map(
+  sim_names,
+  function(sim_name) {
+    plt_name <- stringr::str_replace(sim_name, "with ", "with\n")
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Feature Selection Errors Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      )
+    plt_selection <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Subgroup CATE Errors Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      )
+    plt_cate <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::labs(
+        y = "CATE RMSE"
+      ) +
+      ggplot2::theme(
+        strip.background = ggplot2::element_blank(),
+        strip.placement = "outside",
+        axis.title.y = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(face = "bold", size = 16),
+        legend.text = ggplot2::element_text(size = 12)
+      )
+    plt <- patchwork::wrap_plots(
+      plt_selection, plt_cate, nrow = 1, guides = "collect", widths = c(3.5, 1)
+    ) &
+      ggplot2::labs(x = NULL)
+    
+    if (sim_name != sim_names[2]) {
       plt <- plt &
         ggplot2::guides(
           color = "none", fill = "none"
@@ -333,32 +421,35 @@ plt_subgroup_cov <- purrr::map2(
     } else {
       hjust <- 0.82
     }
+    if (sim_name == sim_names[1]) {
+      plt[[1]] <- plt[[1]] +
+        ggplot2::labs(
+          title = "(A) Selected Subgroup Features"
+        )
+      plt[[2]] <- plt[[2]] +
+        ggplot2::labs(
+          title = "(B) Estimated Subgroup CATEs"
+        )
+    }
     plt[[1]] <- plt[[1]] +
       ggplot2::labs(
-        tag = sprintf("(%s) %s", tag, sim_name)
+        tag = plt_name
       ) +
       ggplot2::theme(
         plot.tag = ggplot2::element_text(
           size = 18, face = "italic", angle = 90, hjust = 0.5, vjust = 1
         ),
         plot.tag.position = c(-.06, 0.48),
-        plot.margin = ggplot2::unit(c(-0.1, 0, 0, 0.75), units = "in")
+        plot.margin = ggplot2::unit(c(0, 0.35, 0, 0.75), units = "in")
       )
     plt <- plt &
       ggplot2::theme(
-        panel.background = ggplot2::element_rect(
-          fill = "grey98"
-        ),
-        panel.grid.major = ggplot2::element_line(
-          color = "grey98"
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5, vjust = -1
         )
       )
-      # ggplot2::theme(
-      #   plot.title = ggplot2::element_text(
-      #     size = 16, face = "bold", hjust = hjust
-      #   ),
-      #   plot.title.position = "plot"
-      # )
     return(plt)
   }
 ) |>
@@ -368,7 +459,7 @@ plt_subgroup_cov <- purrr::map2(
   patchwork::wrap_elements() +
   ggplot2::labs(
     tag = expression(
-      bold(paste("Proportion of Variance Explained in ", tau))
+      bold(paste("Proportion of Variance Explained in ", tau, " by Covariates"))
     )
   ) +
   ggplot2::theme(
@@ -379,7 +470,7 @@ plt_subgroup_cov <- purrr::map2(
     plot.margin = ggplot2::unit(c(-0.1, 0, .2, -0.1), units = "in")
   )
 ggplot2::ggsave(
-  plt_subgroup_cov, 
+  plt, 
   filename = file.path(FIG_DIR, "sim_subgroup_errors_cov.pdf"),
   height = 9, 
   width = 14
@@ -387,24 +478,953 @@ ggplot2::ggsave(
 ```
 
 ```{r}
-plt_thresholds <- purrr::map2(
-  plt_thresholds_ls[1:3], 1:3,
-  function(plt, idx) {
-    sim_name <- names(plt_thresholds_ls[idx])
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Causal Forest (unpruned)",
+  "Distilled Rboost",
+  "Distilled Rboost (unpruned)",
+  "Causal Tree",
+  "Causal Tree (unpruned)"
+)
+
+## without covariates
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::map(
+  sim_names,
+  function(sim_name) {
+    plt_name <- stringr::str_replace(sim_name, "with ", "with\n")
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Feature Selection Errors Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      ) |> 
+      add_pruned_column()
+    plt$layers[[1]]$mapping <- ggplot2::aes(
+      x = tau_heritability, 
+      ymin = mean_feature_selection_err - se_feature_selection_err,
+      ymax = mean_feature_selection_err + se_feature_selection_err,
+      fill = .method_name,
+      group = interaction(.method_name, .is_pruned)
+    )
+    plt$layers[[2]]$mapping <- ggplot2::aes(
+      x = tau_heritability, 
+      y = mean_feature_selection_err,
+      color = .method_name,
+      linetype = .is_pruned, 
+      group = interaction(.method_name, .is_pruned)
+    )
+
+    plt_selection <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_linetype_manual(
+        values = LINETYPES
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Subgroup CATE Errors Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      ) |> 
+      add_pruned_column()
+    plt$layers[[1]]$mapping <- ggplot2::aes(
+      x = tau_heritability, 
+      ymin = mean_cate_err - se_cate_err,
+      ymax = mean_cate_err + se_cate_err,
+      fill = .method_name,
+      group = interaction(.method_name, .is_pruned)
+    )
+    plt$layers[[2]]$mapping <- ggplot2::aes(
+      x = tau_heritability, 
+      y = mean_cate_err,
+      color = .method_name,
+      linetype = .is_pruned, 
+      group = interaction(.method_name, .is_pruned)
+    )
+    
+    plt_cate <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_linetype_manual(
+        values = LINETYPES
+      ) +
+      ggplot2::labs(
+        y = "CATE RMSE"
+      ) +
+      ggplot2::theme(
+        strip.background = ggplot2::element_blank(),
+        strip.placement = "outside",
+        axis.title.y = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(face = "bold", size = 16),
+        legend.text = ggplot2::element_text(size = 12)
+      )
+    plt <- patchwork::wrap_plots(
+      plt_selection, plt_cate, nrow = 1, guides = "collect", widths = c(3.5, 1)
+    ) &
+      ggplot2::labs(x = NULL, linetype = "Pruning Mode")
+    
+    if (sim_name != sim_names[2]) {
+      plt <- plt &
+        ggplot2::guides(
+          color = "none", fill = "none", linetype = "none"
+        )
+      hjust <- 0.78
+    } else {
+      hjust <- 0.82
+    }
+    if (sim_name == sim_names[1]) {
+      plt[[1]] <- plt[[1]] +
+        ggplot2::labs(
+          title = "(A) Selected Subgroup Features"
+        )
+      plt[[2]] <- plt[[2]] +
+        ggplot2::labs(
+          title = "(B) Estimated Subgroup CATEs"
+        )
+    }
+    plt[[1]] <- plt[[1]] +
+      ggplot2::labs(
+        tag = plt_name
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 18, face = "italic", angle = 90, hjust = 0.5, vjust = 1
+        ),
+        plot.tag.position = c(-.03, 0.48),
+        plot.margin = ggplot2::unit(c(0, 0.35, 0, 0.5), units = "in")
+      )
+    plt <- plt &
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5, vjust = -1
+        ),
+        legend.key.width = ggplot2::unit(0.9, "cm")
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1
+  ) |>
+  patchwork::wrap_elements() +
+  ggplot2::labs(
+    tag = expression(
+      bold(paste("Proportion of Variance Explained in ", tau, " by Covariates"))
+    )
+  ) +
+  ggplot2::theme(
+    plot.tag = ggplot2::element_text(
+      size = 16
+    ),
+    plot.tag.position = c(0.5, 0),
+    plot.margin = ggplot2::unit(c(-0.1, 0, .2, -0.1), units = "in")
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_subgroup_errors_with_pruning.pdf"),
+  height = 9, 
+  width = 14
+)
+
+## with covariates
+sim_names <- c(
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::map(
+  sim_names,
+  function(sim_name) {
+    plt_name <- stringr::str_replace(sim_name, "with ", "with\n")
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Feature Selection Errors Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      ) |> 
+      add_pruned_column()
+    plt$layers[[1]]$mapping <- ggplot2::aes(
+      x = tau_heritability, 
+      ymin = mean_feature_selection_err - se_feature_selection_err,
+      ymax = mean_feature_selection_err + se_feature_selection_err,
+      fill = .method_name,
+      group = interaction(.method_name, .is_pruned)
+    )
+    plt$layers[[2]]$mapping <- ggplot2::aes(
+      x = tau_heritability, 
+      y = mean_feature_selection_err,
+      color = .method_name,
+      linetype = .is_pruned, 
+      group = interaction(.method_name, .is_pruned)
+    )
+
+    plt_selection <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_linetype_manual(
+        values = LINETYPES
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Subgroup CATE Errors Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      ) |> 
+      add_pruned_column()
+    plt$layers[[1]]$mapping <- ggplot2::aes(
+      x = tau_heritability, 
+      ymin = mean_cate_err - se_cate_err,
+      ymax = mean_cate_err + se_cate_err,
+      fill = .method_name,
+      group = interaction(.method_name, .is_pruned)
+    )
+    plt$layers[[2]]$mapping <- ggplot2::aes(
+      x = tau_heritability, 
+      y = mean_cate_err,
+      color = .method_name,
+      linetype = .is_pruned, 
+      group = interaction(.method_name, .is_pruned)
+    )
+    
+    plt_cate <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_linetype_manual(
+        values = LINETYPES
+      ) +
+      ggplot2::labs(
+        y = "CATE RMSE"
+      ) +
+      ggplot2::theme(
+        strip.background = ggplot2::element_blank(),
+        strip.placement = "outside",
+        axis.title.y = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(face = "bold", size = 16),
+        legend.text = ggplot2::element_text(size = 12)
+      )
+    plt <- patchwork::wrap_plots(
+      plt_selection, plt_cate, nrow = 1, guides = "collect", widths = c(3.5, 1)
+    ) &
+      ggplot2::labs(x = NULL, linetype = "Pruning Mode")
+    
+    if (sim_name != sim_names[2]) {
+      plt <- plt &
+        ggplot2::guides(
+          color = "none", fill = "none", linetype = "none"
+        )
+      hjust <- 0.78
+    } else {
+      hjust <- 0.82
+    }
+    if (sim_name == sim_names[1]) {
+      plt[[1]] <- plt[[1]] +
+        ggplot2::labs(
+          title = "(A) Selected Subgroup Features"
+        )
+      plt[[2]] <- plt[[2]] +
+        ggplot2::labs(
+          title = "(B) Estimated Subgroup CATEs"
+        )
+    }
+    plt[[1]] <- plt[[1]] +
+      ggplot2::labs(
+        tag = plt_name
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 18, face = "italic", angle = 90, hjust = 0.5, vjust = 1
+        ),
+        plot.tag.position = c(-.06, 0.48),
+        plot.margin = ggplot2::unit(c(0, 0.35, 0, 0.75), units = "in")
+      )
+    plt <- plt &
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5, vjust = -1
+        ),
+        legend.key.width = ggplot2::unit(0.9, "cm")
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1
+  ) |>
+  patchwork::wrap_elements() +
+  ggplot2::labs(
+    tag = expression(
+      bold(paste("Proportion of Variance Explained in ", tau, " by Covariates"))
+    )
+  ) +
+  ggplot2::theme(
+    plot.tag = ggplot2::element_text(
+      size = 16
+    ),
+    plot.tag.position = c(0.45, 0),
+    plot.margin = ggplot2::unit(c(-0.1, 0, .2, -0.1), units = "in")
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_subgroup_errors_cov_with_pruning.pdf"),
+  height = 9, 
+  width = 14
+)
+```
+
+### Selected Subgroup Features + Estimated Subgroup CATEs (max depth = 2)
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Rboost",
+  "Virtual Twins",
+  "Causal Tree",
+  "Linear Regression",
+  "Lasso"
+)
+
+## without covariates
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::map(
+  sim_names,
+  function(sim_name) {
+    plt_name <- stringr::str_replace(sim_name, "with ", "with\n")
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Feature Selection Errors Plot (max depth = 2)`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      )
+    plt_selection <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Subgroup CATE Errors Plot (max depth = 2)`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      )
+    plt_cate <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::labs(
+        y = "CATE RMSE"
+      ) +
+      ggplot2::theme(
+        strip.background = ggplot2::element_blank(),
+        strip.placement = "outside",
+        axis.title.y = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(face = "bold", size = 16),
+        legend.text = ggplot2::element_text(size = 12)
+      )
+    plt <- patchwork::wrap_plots(
+      plt_selection, plt_cate, nrow = 1, guides = "collect", widths = c(3.5, 1)
+    ) &
+      ggplot2::labs(x = NULL)
+    
+    if (sim_name != sim_names[2]) {
+      plt <- plt &
+        ggplot2::guides(
+          color = "none", fill = "none"
+        )
+      hjust <- 0.78
+    } else {
+      hjust <- 0.82
+    }
+    if (sim_name == sim_names[1]) {
+      plt[[1]] <- plt[[1]] +
+        ggplot2::labs(
+          title = "(A) Selected Subgroup Features\n(max depth = 2)"
+        )
+      plt[[2]] <- plt[[2]] +
+        ggplot2::labs(
+          title = "(B) Estimated Subgroup CATEs\n(max depth = 2)"
+        )
+    }
+    plt[[1]] <- plt[[1]] +
+      ggplot2::labs(
+        tag = plt_name
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 18, face = "italic", angle = 90, hjust = 0.5, vjust = 1
+        ),
+        plot.tag.position = c(-.03, 0.48),
+        plot.margin = ggplot2::unit(c(0, 0.35, 0, 0.5), units = "in")
+      )
+    plt <- plt &
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5, vjust = -1
+        )
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1
+  ) |>
+  patchwork::wrap_elements() +
+  ggplot2::labs(
+    tag = expression(
+      bold(paste("Proportion of Variance Explained in ", tau, " by Covariates"))
+    )
+  ) +
+  ggplot2::theme(
+    plot.tag = ggplot2::element_text(
+      size = 16
+    ),
+    plot.tag.position = c(0.5, 0),
+    plot.margin = ggplot2::unit(c(-0.1, 0, .2, -0.1), units = "in")
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_subgroup_errors_max_depth2.pdf"),
+  height = 9.2, 
+  width = 14
+)
+
+## with covariates
+sim_names <- c(
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::map(
+  sim_names,
+  function(sim_name) {
+    plt_name <- stringr::str_replace(sim_name, "with ", "with\n")
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Feature Selection Errors Plot (max depth = 2)`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      )
+    plt_selection <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Subgroup CATE Errors Plot (max depth = 2)`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      )
+    plt_cate <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::labs(
+        y = "CATE RMSE"
+      ) +
+      ggplot2::theme(
+        strip.background = ggplot2::element_blank(),
+        strip.placement = "outside",
+        axis.title.y = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(face = "bold", size = 16),
+        legend.text = ggplot2::element_text(size = 12)
+      )
+    plt <- patchwork::wrap_plots(
+      plt_selection, plt_cate, nrow = 1, guides = "collect", widths = c(3.5, 1)
+    ) &
+      ggplot2::labs(x = NULL)
+    
+    if (sim_name != sim_names[2]) {
+      plt <- plt &
+        ggplot2::guides(
+          color = "none", fill = "none"
+        )
+      hjust <- 0.78
+    } else {
+      hjust <- 0.82
+    }
+    if (sim_name == sim_names[1]) {
+      plt[[1]] <- plt[[1]] +
+        ggplot2::labs(
+          title = "(A) Selected Subgroup Features\n(max depth = 2)"
+        )
+      plt[[2]] <- plt[[2]] +
+        ggplot2::labs(
+          title = "(B) Estimated Subgroup CATEs\n(max depth = 2)"
+        )
+    }
+    plt[[1]] <- plt[[1]] +
+      ggplot2::labs(
+        tag = plt_name
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 18, face = "italic", angle = 90, hjust = 0.5, vjust = 1
+        ),
+        plot.tag.position = c(-.06, 0.48),
+        plot.margin = ggplot2::unit(c(0, 0.35, 0, 0.75), units = "in")
+      )
+    plt <- plt &
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5, vjust = -1
+        )
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1
+  ) |>
+  patchwork::wrap_elements() +
+  ggplot2::labs(
+    tag = expression(
+      bold(paste("Proportion of Variance Explained in ", tau, " by Covariates"))
+    )
+  ) +
+  ggplot2::theme(
+    plot.tag = ggplot2::element_text(
+      size = 16
+    ),
+    plot.tag.position = c(0.45, 0),
+    plot.margin = ggplot2::unit(c(-0.1, 0, .2, -0.1), units = "in")
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_subgroup_errors_cov_max_depth2.pdf"),
+  height = 9.2, 
+  width = 14
+)
+```
+
+### Thresholds Distances
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Rboost",
+  "Virtual Twins",
+  "Causal Tree",
+  "Linear Regression",
+  "Lasso"
+)
+
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP",
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
     tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Threshold Distances Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      )
     plt <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::labs(
+        title = sprintf("(%s) %s", tag, sim_name),
+        y = "Average  | Estimated Threshold - True Threshold |",
+        x = expression(
+          bold(
+            paste("Proportion of Variance Explained in ", tau, " by Covariates")
+          )
+        )
+      ) +
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        ),
+        axis.title = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(size = 16),
+        strip.text = ggplot2::element_text(size = 14)
+      )
+    if (sim_name != sim_names[5]) {
+      plt <- plt +
+        ggplot2::guides(
+          color = "none", fill = "none"
+        )
+    }
+    if (stringr::str_detect(sim_name, "Linear")) {
+      plt <- plt + 
+        ggplot2::theme(
+          axis.title.y = ggplot2::element_blank(),
+          plot.margin = ggplot2::unit(c(0, 0, 0.1, 0.2), units = "in")
+        )
+    } else {
+      plt <- plt +
+        ggplot2::theme(
+          plot.margin = ggplot2::unit(c(0, 0.2, 0.1, 0), units = "in")
+        )
+    }
+    if (!stringr::str_detect(sim_name, "OR")) {
+      plt <- plt + 
+        ggplot2::theme(
+          axis.title.x = ggplot2::element_blank()
+        )
+    }
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 2, byrow = FALSE
+  ) +
+  patchwork::plot_layout(
+    axis_titles = "collect_y"
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(
+    FIG_DIR, sprintf("sim_threshold_distances.pdf")
+  ),
+  height = 9, 
+  width = 14
+)
+```
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Causal Forest (unpruned)",
+  "Distilled Rboost",
+  "Distilled Rboost (unpruned)",
+  "Causal Tree",
+  "Causal Tree (unpruned)"
+)
+
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP",
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Threshold Distances Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      ) |> 
+      add_pruned_column()
+    plt$layers[[1]]$mapping <- ggplot2::aes(
+      x = tau_heritability, 
+      ymin = mean_threshold_dist - se_threshold_dist,
+      ymax = mean_threshold_dist + se_threshold_dist,
+      fill = .method_name,
+      group = interaction(.method_name, .is_pruned)
+    )
+    plt$layers[[2]]$mapping <- ggplot2::aes(
+      x = tau_heritability, 
+      y = mean_threshold_dist,
+      color = .method_name,
+      linetype = .is_pruned, 
+      group = interaction(.method_name, .is_pruned)
+    )
+    plt <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_linetype_manual(
+        values = LINETYPES
+      ) +
+      ggplot2::labs(
+        title = sprintf("(%s) %s", tag, sim_name),
+        y = "Average  | Estimated Threshold - True Threshold |",
+        x = expression(
+          bold(
+            paste("Proportion of Variance Explained in ", tau, " by Covariates")
+          )
+        ),
+        linetype = "Pruning Mode"
+      ) +
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        ),
+        axis.title = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(size = 16),
+        strip.text = ggplot2::element_text(size = 14)
+      )
+    if (sim_name != sim_names[5]) {
+      plt <- plt +
+        ggplot2::guides(
+          color = "none", fill = "none", linetype = "none"
+        )
+    }
+    if (stringr::str_detect(sim_name, "Linear")) {
+      plt <- plt + 
+        ggplot2::theme(
+          axis.title.y = ggplot2::element_blank(),
+          plot.margin = ggplot2::unit(c(0, 0, 0.1, 0.2), units = "in")
+        )
+    } else {
+      plt <- plt +
+        ggplot2::theme(
+          plot.margin = ggplot2::unit(c(0, 0.2, 0.1, 0), units = "in")
+        )
+    }
+    if (!stringr::str_detect(sim_name, "OR")) {
+      plt <- plt + 
+        ggplot2::theme(
+          axis.title.x = ggplot2::element_blank()
+        )
+    }
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 2, byrow = FALSE
+  ) +
+  patchwork::plot_layout(
+    axis_titles = "collect_y"
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(
+    FIG_DIR, sprintf("sim_threshold_distances_with_pruning.pdf")
+  ),
+  height = 9, 
+  width = 14
+)
+```
+
+### Thresholds Distances (max depth = 2)
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Rboost",
+  "Virtual Twins",
+  "Causal Tree",
+  "Linear Regression",
+  "Lasso"
+)
+
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP",
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Threshold Distances Plot (max depth = 2)`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      )
+    plt <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::labs(
+        title = sprintf("(%s) %s\n", tag, sim_name),
+        y = "Average  | Estimated Threshold - True Threshold |\n(max depth = 2)",
+        x = expression(
+          bold(
+            paste("Proportion of Variance Explained in ", tau, " by Covariates")
+          )
+        )
+      ) +
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        ),
+        axis.title = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(size = 16),
+        strip.text = ggplot2::element_text(size = 14)
+      )
+    if (sim_name != sim_names[5]) {
+      plt <- plt +
+        ggplot2::guides(
+          color = "none", fill = "none"
+        )
+    }
+    if (stringr::str_detect(sim_name, "Linear")) {
+      plt <- plt + 
+        ggplot2::theme(
+          axis.title.y = ggplot2::element_blank(),
+          plot.margin = ggplot2::unit(c(0, 0, 0.1, 0.2), units = "in")
+        )
+    } else {
+      plt <- plt +
+        ggplot2::theme(
+          plot.margin = ggplot2::unit(c(0, 0.2, 0.1, 0), units = "in")
+        )
+    }
+    if (!stringr::str_detect(sim_name, "OR")) {
+      plt <- plt + 
+        ggplot2::theme(
+          axis.title.x = ggplot2::element_blank()
+        )
+    }
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 2, byrow = FALSE
+  ) +
+  patchwork::plot_layout(
+    axis_titles = "collect_y"
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(
+    FIG_DIR, sprintf("sim_threshold_distances_max_depth2.pdf")
+  ),
+  height = 9, 
+  width = 14.2
+)
+```
+
+### Threshold Distributions
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Rboost",
+  "Virtual Twins",
+  "Causal Tree",
+  "Linear Regression",
+  "Lasso"
+)
+KEEP_HERITABILITY <- c(0.2, 0.6, 1)
+
+# without covariates
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Thresholds Distribution Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::facet_grid(.var ~ tau_heritability, labeller = signal_labeller) +
       ggplot2::labs(
         title = sprintf("(%s) %s", tag, sim_name)
       ) +
       ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
         plot.title = ggplot2::element_text(
           size = 18, face = "italic", hjust = 0.5
-        ),
-        panel.background = ggplot2::element_rect(
-          fill = "grey98"
-        ),
-        panel.grid.major = ggplot2::element_line(
-          color = "grey98"
         )
       )
     return(plt)
@@ -417,33 +1437,46 @@ plt_thresholds <- purrr::map2(
     axes = "collect"
   )
 ggplot2::ggsave(
-  plt_thresholds, 
+  plt, 
   filename = file.path(FIG_DIR, "sim_thresholds.pdf"),
   height = 10, 
   width = 11
 )
 
-plt_thresholds_cov <- purrr::map2(
-  plt_thresholds_ls[4:6], 4:6,
-  function(plt, idx) {
-    sim_name <- stringr::str_replace(
-      names(plt_thresholds_ls[idx]), "with", "DGP with\n"
-    ) |>
-      stringr::str_remove(" DGP$")
-    tag <- LETTERS[idx - 3]
+# with covariates
+sim_names <- c(
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Thresholds Distribution Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
     plt <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::facet_grid(.var ~ tau_heritability, labeller = signal_labeller) +
       ggplot2::labs(
         title = sprintf("(%s) %s", tag, sim_name)
       ) +
       ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
         plot.title = ggplot2::element_text(
           size = 18, face = "italic", hjust = 0.5
-        ),
-        panel.background = ggplot2::element_rect(
-          fill = "grey98"
-        ),
-        panel.grid.major = ggplot2::element_line(
-          color = "grey98"
         )
       )
     return(plt)
@@ -456,64 +1489,554 @@ plt_thresholds_cov <- purrr::map2(
     axes = "collect"
   )
 ggplot2::ggsave(
-  plt_thresholds_cov, 
+  plt, 
   filename = file.path(FIG_DIR, "sim_thresholds_cov.pdf"),
   height = 10, 
   width = 11
 )
 ```
 
-```{r}
-# plt_ntrees_ls <- purrr::map(
-#   plt_freq_ls[1:3], ~ .x[[1]]
-# )
-# plt_nsplits_ls <- purrr::map(
-#   plt_freq_ls[1:3], ~ .x[[2]]
-# )
-# plt_ntrees <- patchwork::wrap_plots(
-#   plt_ntrees_ls, nrow = 1, guides = "collect"
-# ) +
-#   patchwork::plot_layout(
-#     axes = "collect"
-#   )
+### Threshold Distributions (max depth = 2)
 
-plt_freq <- purrr::map2(
-  plt_freq_ls[1:3], 1:3,
-  function(plt, idx) {
-    sim_name <- names(plt_freq_ls[idx])
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Rboost",
+  "Virtual Twins",
+  "Causal Tree",
+  "Linear Regression",
+  "Lasso"
+)
+KEEP_HERITABILITY <- c(0.2, 0.6, 1)
+
+# without covariates
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
     tag <- LETTERS[idx]
-    plt <- patchwork::wrap_elements(plt) +
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Thresholds Distribution Plot (max depth = 2)`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::facet_grid(.var ~ tau_heritability, labeller = signal_labeller) +
       ggplot2::labs(
-        tag = sprintf("(%s) %s", tag, sim_name)
+        y = "Threshold (max depth = 2)",
+        title = sprintf("(%s) %s", tag, sim_name)
       ) +
       ggplot2::theme(
-        plot.tag = ggplot2::element_text(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
           size = 18, face = "italic", hjust = 0.5
-        ),
-        plot.tag.position = c(0.47, 1.02),
-        plot.margin = ggplot2::unit(c(0.3, 0, 0, 0.5), units = "in")
+        )
       )
     return(plt)
   }
 ) |>
   patchwork::wrap_plots(
-    ncol = 1
+    ncol = 1, guides = "collect"
+  ) +
+  patchwork::plot_layout(
+    axes = "collect"
   )
 ggplot2::ggsave(
-  plt_freq, 
-  filename = file.path(FIG_DIR, "sim_freq.pdf"),
-  height = 16, 
-  width = 14
+  plt, 
+  filename = file.path(FIG_DIR, "sim_thresholds_max_depth2.pdf"),
+  height = 10, 
+  width = 11
 )
 
-plt_freq_cov <- purrr::map2(
-  plt_freq_ls[4:6], 4:6,
-  function(plt, idx) {
-    sim_name <- stringr::str_replace(
-      names(plt_freq_ls[idx]), "with", "DGP with"
-    ) |>
-      stringr::str_remove(" DGP$")
-    tag <- LETTERS[idx - 3]
+# with covariates
+sim_names <- c(
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Thresholds Distribution Plot (max depth = 2)`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt <- plt +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::facet_grid(.var ~ tau_heritability, labeller = signal_labeller) +
+      ggplot2::labs(
+        y = "Threshold (max depth = 2)",
+        title = sprintf("(%s) %s", tag, sim_name)
+      ) +
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        )
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1, guides = "collect"
+  ) +
+  patchwork::plot_layout(
+    axes = "collect"
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_thresholds_cov_max_depth2.pdf"),
+  height = 10, 
+  width = 11
+)
+```
+
+### Subgroup Stability
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Rboost",
+  "Causal Tree"
+)
+KEEP_HERITABILITY <- c(0.2, 0.6, 1)
+
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP",
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+
+plt <- purrr::map(
+  sim_names,
+  function(sim_name) {
+    f1_df <- viz_results_ls[[sim_name]]$`Subgroup Feature Selection Errors Plot`$data |> 
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY,
+        .metric == "F1"
+      ) |> 
+      dplyr::mutate(
+        .value = mean_feature_selection_err
+      )
+    cate_df <- viz_results_ls[[sim_name]]$`Subgroup CATE Errors Plot`$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY,
+        .metric == "rmse"
+      ) |> 
+      dplyr::mutate(
+        .metric = "CATE RMSE",
+        .value = mean_cate_err
+      )
+    
+    plt_err <- dplyr::bind_rows(f1_df, cate_df) |> 
+      dplyr::mutate(
+        .metric = forcats::fct_inorder(.metric)
+      ) |> 
+      ggplot2::ggplot() +
+      ggplot2::aes(
+        x = .method_name,
+        y = .value, 
+        fill = .method_name
+      ) +
+      ggplot2::geom_bar(
+        stat = "identity", size = 1, width = 0.75
+      ) +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::facet_grid(
+        .metric ~ tau_heritability, labeller = signal_labeller, 
+        scales = "free_y", switch = "y"
+      ) +
+      ggplot2::scale_x_discrete(
+        breaks = KEEP_METHODS,
+        labels = stringr::str_replace_all(KEEP_METHODS, " ", "\n")
+      ) +
+      ggplot2::labs(y = "", x = "Method") +
+      ggplot2::guides(color = "none", fill = "none") +
+      vthemes::theme_vmodern(size_preset = "medium", grid_color = "grey98") +
+      ggplot2::theme(
+        strip.background.y = ggplot2::element_blank(),
+        strip.text.y = ggplot2::element_text(
+          color = "black", size = 16
+        ),
+        strip.placement = "outside",
+        axis.title.y = ggplot2::element_blank(),
+        axis.text.y = ggplot2::element_text(size = 9)
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Stability Diagnostics Plot`[[1]]
+    plt$data <- plt$data |> 
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      ) |> 
+      dplyr::mutate(
+        .metric = "Jaccard SSI"
+      )
+    plt_jaccard <- plt +
+      ggplot2::geom_line(size = 0.75) +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::facet_grid(
+        ~ tau_heritability, labeller = signal_labeller, switch = "y"
+      ) +
+      ggplot2::coord_cartesian(xlim = c(1, 4)) +
+      ggplot2::scale_x_continuous(
+        breaks = 1:4
+      ) +
+      ggplot2::scale_y_continuous(
+        limits = c(0, 1), breaks = seq(0, 1, by = 0.2)
+      ) +
+      ggplot2::labs(
+        x = "Tree Depth",
+        y = "Jaccard SSI",
+        color = "Method",
+        fill = "Method"
+      ) +
+      vthemes::theme_vmodern(size_preset = "medium") +
+      ggplot2::theme(
+        strip.background.y = ggplot2::element_blank(),
+        strip.text.y = ggplot2::element_text(
+          color = "black", size = 16
+        ),
+        strip.placement = "outside",
+        axis.title.y = ggplot2::element_blank(),
+        axis.text.y = ggplot2::element_text(size = 9)
+      )
+    
+    plt <- patchwork::wrap_plots(
+      plt_jaccard, plt_err,
+      ncol = 1, heights = c(1.2, 2), guides = "collect"
+    ) +
+      patchwork::plot_layout(
+        axis_titles = "collect_x"
+      ) +
+      patchwork::plot_annotation(
+        title = sim_name, 
+        tag_levels = "A", 
+        tag_prefix = "(",
+        tag_suffix = ")",
+        theme = ggplot2::theme(
+          plot.title = ggplot2::element_text(
+            size = 18, face = "italic", hjust = 0.42
+          )
+        )
+      ) &
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(size = 16)#,
+        # legend.position = "bottom"  # for slides
+      )
+    # ggplot2::ggsave(
+    #   plt, 
+    #   filename = file.path(
+    #     FIG_DIR, 
+    #     sprintf("sim_stability_%s_slides.pdf", sim_name)
+    #   ),
+    #   width = 11.5,
+    #   height = 9
+    # )
+    ggplot2::ggsave(
+      plt, 
+      filename = file.path(
+        FIG_DIR,
+        sprintf("sim_stability_%s.pdf", sim_name)
+      ),
+      width = 10.5,
+      height = 7.5
+    )
+  }
+)
+```
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Rboost",
+  "Causal Tree"
+)
+KEEP_HERITABILITY <- c(0.2, 0.6, 1)
+
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP",
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+
+plt <- purrr::map(
+  sim_names,
+  function(sim_name) {
+    plt_df <- viz_results_ls[[sim_name]]$`Subgroup Feature Selection Errors Plot`$data |> 
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY,
+        .metric == "F1"
+      )
+    plt_f1 <- plt_df |> 
+      ggplot2::ggplot() +
+      ggplot2::aes(
+        x = .method_name,
+        y = mean_feature_selection_err,
+        fill = .method_name
+      ) +
+      ggplot2::geom_bar(stat = "identity", size = 1) +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::facet_grid(
+        tau_heritability ~ ., labeller = signal_labeller, scales = "free_y"
+      ) +
+      ggplot2::labs(y = "F1", x = "Method") +
+      ggplot2::guides(color = "none", fill = "none") +
+      vthemes::theme_vmodern(size_preset = "medium", grid_color = "grey98") +
+      ggplot2::theme(
+        strip.background = ggplot2::element_blank(),
+        strip.text = ggplot2::element_blank(),
+        axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5)
+      )
+    
+    plt_df <- viz_results_ls[[sim_name]]$`Subgroup CATE Errors Plot`$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY,
+        .metric == "rmse"
+      )
+    plt_cate <- plt_df |> 
+      ggplot2::ggplot() +
+      ggplot2::aes(
+        x = .method_name,
+        y = mean_cate_err,
+        fill = .method_name
+      ) +
+      ggplot2::geom_bar(stat = "identity", size = 1) +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::facet_grid(
+        tau_heritability ~ ., labeller = signal_labeller, scales = "free_y"
+      ) +
+      ggplot2::labs(y = "CATE RMSE", x = "Method") +
+      ggplot2::guides(color = "none", fill = "none") +
+      vthemes::theme_vmodern(size_preset = "medium", grid_color = "grey98") +
+      ggplot2::theme(
+        strip.background = ggplot2::element_blank(),
+        strip.text = ggplot2::element_blank(),
+        axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5)
+      )
+      
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Stability Diagnostics Plot`[[1]]
+    plt$data <- plt$data |> 
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt_jaccard <- plt +
+      ggplot2::geom_line(size = 0.75) +
+      ggplot2::scale_color_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        breaks = KEEP_METHODS,
+        values = COLORS
+      ) +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      ggplot2::coord_cartesian(xlim = c(1, 4)) +
+      ggplot2::scale_x_continuous(
+        breaks = 1:4
+      ) +
+      ggplot2::scale_y_continuous(
+        limits = c(0, 1), breaks = seq(0, 1, by = 0.2)
+      ) +
+      ggplot2::labs(
+        x = "Tree Depth",
+        y = "Jaccard SSI",
+        color = "Method",
+        fill = "Method"
+      ) +
+      vthemes::theme_vmodern(size_preset = "medium")
+    
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Stability Diagnostics Plot`[[2]]
+    plt$data <- plt$data |> 
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    if (stringr::str_detect(sim_name, "Covariates")) {
+      FT_COLORS <- c(
+        "#d3831b", "#eeb062",# "#e19e49"
+        "#CCCCCC", "#B5B5B5", "#9E9E9E", "#888888",
+        "#717171", "#5A5A5A", "#434343", "#2D2D2D"
+      )
+      # FT_COLORS <- c(
+      #   "#d07d13", "#eeb062",
+      #   # "#FFa59B", "#FFD2CC",
+      #   "#B34363", "#cb8c9d",
+      #   "#9E9E9E", "#888888",
+      #   "#717171", "#5A5A5A", "#434343", "#2D2D2D"
+      # )
+    } else {
+      FT_COLORS <- c(
+        "#d3831b", "#eeb062",# "#e19e49"
+        "#CCCCCC", "#B5B5B5", "#9E9E9E", "#888888",
+        "#717171", "#5A5A5A", "#434343", "#2D2D2D"
+      )
+    }
+    plt_stability_feature <- plt +
+      ggplot2::scale_fill_manual(values = FT_COLORS) +
+      ggplot2::facet_grid(tau_heritability ~ depth, labeller = signal_labeller) +
+      ggplot2::labs(
+        x = "Method",
+        y = "Proportion of Splits",
+        fill = "Variable"
+      ) +
+      vthemes::theme_vmodern(size_preset = "medium") +
+      ggplot2::theme(
+        axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5)
+      )
+    
+    plt <- patchwork::wrap_plots(
+      plt_f1, plt_cate, plt_jaccard, plt_stability_feature,
+      nrow = 1, widths = c(0.5, 0.5, 1.25, 3.25), guides = "collect"
+    ) |> 
+      patchwork::wrap_elements() +
+      ggplot2::labs(
+        title = "   (A) Subgroup Estimation       (B) Jaccard Stability                              (C) Feature Stability",
+        tag = sim_name
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 20, face = "bold", hjust = 0.5
+        ),
+        plot.tag.position = c(0.47, 1.02),
+        plot.margin = ggplot2::unit(c(0.32, 0, 0, 0.2), units = "in"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0, vjust = -0.3
+        )
+      )
+    
+    ggplot2::ggsave(
+      plt, 
+      filename = file.path(
+        FIG_DIR, 
+        sprintf("sim_stability_feature_%s.pdf", sim_name)
+      ),
+      height = 8, 
+      width = 14
+    )
+  }
+)
+```
+
+### Number of Feature Splits Heatmap
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Causal Forest (unpruned)",
+  "Distilled Rboost",
+  "Distilled Rboost (unpruned)",
+  "Virtual Twins",
+  "Causal Tree",
+  "Causal Tree (unpruned)",
+  "Linear Regression",
+  "Lasso"
+)
+KEEP_HERITABILITY <- c(0.2, 0.6, 1)
+
+# without covariates
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Number of Splits Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt_nsplits <- plt +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      viridis::scale_fill_viridis(
+        begin = 0.1, end = 1, option = "magma", limits = c(0., 4.5)
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Number of Trees Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt_ntrees <- plt +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      viridis::scale_fill_viridis(
+        begin = 0.1, end = 1, option = "magma", limits = c(0, 100)
+      )
+    
+    plt <- patchwork::wrap_plots(plt_ntrees, plt_nsplits, nrow = 1) +
+      patchwork::plot_layout(
+        axis_titles = "collect_y"
+      ) &
+      ggplot2::labs(x = "Variable")
     plt <- patchwork::wrap_elements(plt) +
       ggplot2::labs(
         tag = sprintf("(%s) %s", tag, sim_name)
@@ -532,82 +2055,1185 @@ plt_freq_cov <- purrr::map2(
     ncol = 1
   )
 ggplot2::ggsave(
-  plt_freq_cov, 
+  plt, 
+  filename = file.path(FIG_DIR, "sim_freq.pdf"),
+  height = 17.5, 
+  width = 15
+)
+
+# with covariates
+sim_names <- c(
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Number of Splits Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt_nsplits <- plt +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      viridis::scale_fill_viridis(
+        begin = 0.1, end = 1, option = "magma", limits = c(0., 4.5)
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Number of Trees Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt_ntrees <- plt +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      viridis::scale_fill_viridis(
+        begin = 0.1, end = 1, option = "magma", limits = c(0, 100)
+      )
+    
+    plt <- patchwork::wrap_plots(plt_ntrees, plt_nsplits, nrow = 1) +
+      patchwork::plot_layout(
+        axis_titles = "collect_y"
+      ) &
+      ggplot2::labs(x = "Variable")
+    plt <- patchwork::wrap_elements(plt) +
+      ggplot2::labs(
+        tag = sprintf("(%s) %s", tag, sim_name)
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        ),
+        plot.tag.position = c(0.47, 1.02),
+        plot.margin = ggplot2::unit(c(0.3, 0, 0, 0.5), units = "in")
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1
+  )
+ggplot2::ggsave(
+  plt, 
   filename = file.path(FIG_DIR, "sim_freq_cov.pdf"),
-  height = 16, 
+  height = 17.5, 
+  width = 15
+)
+```
+
+### Number of Feature Splits Heatmap (max depth = 2)
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Rboost",
+  "Virtual Twins",
+  "Causal Tree",
+  "Linear Regression",
+  "Lasso"
+)
+KEEP_HERITABILITY <- c(0.2, 0.6, 1)
+
+# without covariates
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Number of Splits Plot (max depth = 2)`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt_nsplits <- plt +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      viridis::scale_fill_viridis(
+        begin = 0.1, end = 1, option = "magma", limits = c(0., 4.5)
+      ) +
+      ggplot2::labs(fill = "Average #\nSplits per Tree\n(max depth = 2)")
+    
+    plt <- viz_results_ls[[sim_name]]$`Number of Trees Plot (max depth = 2)`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt_ntrees <- plt +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      viridis::scale_fill_viridis(
+        begin = 0.1, end = 1, option = "magma", limits = c(0, 100)
+      ) +
+      ggplot2::labs(fill = "# Trees\n(max depth = 2)")
+    
+    plt <- patchwork::wrap_plots(plt_ntrees, plt_nsplits, nrow = 1) +
+      patchwork::plot_layout(
+        axis_titles = "collect_y"
+      ) &
+      ggplot2::labs(x = "Variable")
+    plt <- patchwork::wrap_elements(plt) +
+      ggplot2::labs(
+        tag = sprintf("(%s) %s", tag, sim_name)
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        ),
+        plot.tag.position = c(0.47, 1.02),
+        plot.margin = ggplot2::unit(c(0.3, 0, 0, 0.5), units = "in")
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_freq_max_depth2.pdf"),
+  height = 17.5, 
+  width = 15
+)
+
+# with covariates
+sim_names <- c(
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Number of Splits Plot (max depth = 2)`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt_nsplits <- plt +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      viridis::scale_fill_viridis(
+        begin = 0.1, end = 1, option = "magma", limits = c(0., 4.5)
+      ) +
+      ggplot2::labs(fill = "Average #\nSplits per Tree\n(max depth = 2)")
+    
+    plt <- viz_results_ls[[sim_name]]$`Number of Trees Plot (max depth = 2)`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt_ntrees <- plt +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      viridis::scale_fill_viridis(
+        begin = 0.1, end = 1, option = "magma", limits = c(0, 100)
+      ) +
+      ggplot2::labs(fill = "# Trees\n(max depth = 2)")
+    
+    plt <- patchwork::wrap_plots(plt_ntrees, plt_nsplits, nrow = 1) +
+      patchwork::plot_layout(
+        axis_titles = "collect_y"
+      ) &
+      ggplot2::labs(x = "Variable")
+    plt <- patchwork::wrap_elements(plt) +
+      ggplot2::labs(
+        tag = sprintf("(%s) %s", tag, sim_name)
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        ),
+        plot.tag.position = c(0.47, 1.02),
+        plot.margin = ggplot2::unit(c(0.3, 0, 0, 0.5), units = "in")
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_freq_cov_max_depth2.pdf"),
+  height = 17.5, 
+  width = 15
+)
+```
+
+## Varying \# Repeated Crossfits Simulations {.tabset .tabset-pills .tabset-pills-square}
+
+```{r results = "asis"}
+sim_results_dir <- here::here(
+  file.path("results", "Varying nrep crossfits")
+)
+SIM_NAMES <- c(
+  "AND DGP" = "AND DGP",
+  "Additive DGP" = "Additive DGP",
+  "OR DGP" = "OR DGP"
+)
+
+# load in results
+eval_results_ls <- list()
+viz_results_ls <- list()
+for (sim_name in names(SIM_NAMES)) {
+  fit_results <- readRDS(
+    file.path(
+      sim_results_dir, 
+      paste0(sim_name, "-Distilled Causal Forest (crossfit)-Distilled Rboost (crossfit)"), 
+      "Varying tau_heritability-nreps_crossfit", "fit_results.rds"
+    )
+  )
+  eval_results <- readRDS(
+    file.path(
+      sim_results_dir, 
+      paste0(sim_name, "-Distilled Causal Forest (crossfit)-Distilled Rboost (crossfit)"), 
+      "Varying tau_heritability-nreps_crossfit", "eval_results.rds"
+    )
+  )
+  eval_results <- purrr::map(
+    eval_results,
+    ~ .x |>
+      dplyr::filter(
+        !stringr::str_detect(.method_name, "unpruned"),
+        !stringr::str_detect(.method_name, "Causal Forest")
+      ) |>
+      dplyr::mutate(
+        .method_name = stringr::str_remove_all(.method_name, " \\(.*\\)"),
+        nreps_crossfit = tidyr::replace_na(nreps_crossfit, 0) |>
+          as.factor() |>
+          forcats::fct_inseq()
+      )
+  )
+  
+  viz_results <- visualize_experiment(
+    crossfit_experiment, fit_results, eval_results
+  )
+  eval_results_ls[[SIM_NAMES[[sim_name]]]] <- eval_results
+  viz_results_ls[[SIM_NAMES[[sim_name]]]] <- viz_results
+}
+```
+
+### Selected Subgroup Features + Estimated Subgroup CATEs
+
+```{r}
+## without covariates
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::map(
+  sim_names,
+  function(sim_name) {
+    plt_name <- stringr::str_replace(sim_name, "with ", "with\n")
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Feature Selection Errors Plot`
+    plt_selection <- plt +
+      ggplot2::scale_color_manual(
+        values = CROSSFIT_COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        values = CROSSFIT_COLORS
+      ) +
+      ggplot2::labs(
+        color = "# of Repeated\nCrossfits",
+        fill = "# of Repeated\nCrossfits"
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Subgroup CATE Errors Plot`
+    plt_cate <- plt +
+      ggplot2::scale_color_manual(
+        values = CROSSFIT_COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        values = CROSSFIT_COLORS
+      ) +
+      ggplot2::labs(
+        y = "CATE RMSE",
+        color = "# of Repeated\nCrossfits",
+        fill = "# of Repeated\nCrossfits"
+      ) +
+      ggplot2::theme(
+        strip.background = ggplot2::element_blank(),
+        strip.placement = "outside",
+        axis.title.y = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(face = "bold", size = 16),
+        legend.text = ggplot2::element_text(size = 12)
+      )
+    plt <- patchwork::wrap_plots(
+      plt_selection, plt_cate, nrow = 1, guides = "collect", widths = c(3.5, 1)
+    ) &
+      ggplot2::labs(x = NULL)
+    
+    if (sim_name != sim_names[2]) {
+      plt <- plt &
+        ggplot2::guides(
+          color = "none", fill = "none"
+        )
+      hjust <- 0.78
+    } else {
+      hjust <- 0.82
+    }
+    if (sim_name == sim_names[1]) {
+      plt[[1]] <- plt[[1]] +
+        ggplot2::labs(
+          title = "(A) Selected Subgroup Features"
+        )
+      plt[[2]] <- plt[[2]] +
+        ggplot2::labs(
+          title = "(B) Estimated Subgroup CATEs"
+        )
+    }
+    plt[[1]] <- plt[[1]] +
+      ggplot2::labs(
+        tag = plt_name
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 18, face = "italic", angle = 90, hjust = 0.5, vjust = 1
+        ),
+        plot.tag.position = c(-.03, 0.48),
+        plot.margin = ggplot2::unit(c(0, 0.35, 0, 0.5), units = "in")
+      )
+    plt <- plt &
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5, vjust = -1
+        )
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1
+  ) |>
+  patchwork::wrap_elements() +
+  ggplot2::labs(
+    tag = expression(
+      bold(paste("Proportion of Variance Explained in ", tau, " by Covariates"))
+    )
+  ) +
+  ggplot2::theme(
+    plot.tag = ggplot2::element_text(
+      size = 16
+    ),
+    plot.tag.position = c(0.5, 0),
+    plot.margin = ggplot2::unit(c(-0.1, 0, .2, -0.1), units = "in")
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_subgroup_errors_nreps_crossfit.pdf"),
+  height = 9, 
   width = 14
 )
 ```
 
+### Thresholds Distances
 
 ```{r}
-plt_stability <- purrr::map2(
-  plt_stability_ls, 1:length(plt_stability_ls),
-  function(plt, idx) {
-    plt_names <- names(plt_stability_ls)
-    sim_name <- dplyr::case_when(
-      stringr::str_detect(plt_names, "with") ~ 
-        stringr::str_replace(
-          plt_names, "with", "DGP with\n"
-        ) |> 
-        stringr::str_remove(" DGP$"),
-      TRUE ~ plt_names
-    )[idx]
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
     tag <- LETTERS[idx]
-    plt_df <- plt$data |>
-      dplyr::mutate(
-        sim_name = sprintf("(%s) %s", tag, sim_name)
+    plt <- viz_results_ls[[sim_name]]$`Threshold Distances Plot`
+    plt <- plt +
+      ggplot2::scale_color_manual(
+        values = CROSSFIT_COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        values = CROSSFIT_COLORS
+      ) +
+      ggplot2::labs(
+        title = sprintf("(%s) %s", tag, sim_name),
+        y = "Average  | Estimated Threshold - True Threshold |",
+        x = expression(
+          bold(
+            paste("Proportion of Variance Explained in ", tau, " by Covariates")
+          )
+        ),
+        color = "# of Repeated\nCrossfits",
+        fill = "# of Repeated\nCrossfits"
+      ) +
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        ),
+        axis.title = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(size = 16),
+        strip.text = ggplot2::element_text(size = 14)
       )
-    return(plt_df)
+    if (sim_name != sim_names[2]) {
+      plt <- plt +
+        ggplot2::guides(
+          color = "none", fill = "none"
+        )
+    }
+    if (stringr::str_detect(sim_name, "Linear")) {
+      plt <- plt + 
+        ggplot2::theme(
+          axis.title.y = ggplot2::element_blank(),
+          plot.margin = ggplot2::unit(c(0, 0, 0.1, 0.2), units = "in")
+        )
+    } else {
+      plt <- plt +
+        ggplot2::theme(
+          plot.margin = ggplot2::unit(c(0, 0.2, 0.1, 0), units = "in")
+        )
+    }
+    if (!stringr::str_detect(sim_name, "OR")) {
+      plt <- plt + 
+        ggplot2::theme(
+          axis.title.x = ggplot2::element_blank()
+        )
+    }
+    return(plt)
   }
 ) |>
-  purrr::list_rbind() |> 
-  dplyr::filter(
-    depth <= 4
-  )
-  ggplot2::ggplot() +
-  ggplot2::geom_line(
-    ggplot2::aes(
-      x = depth, y = mean_jaccard, color = .method_name
-    )
+  patchwork::wrap_plots(
+    ncol = 1, byrow = FALSE
   ) +
-  ggplot2::geom_ribbon(
-    ggplot2::aes(
-      x = depth,
-      ymin = mean_jaccard - se_jaccard,
-      ymax = mean_jaccard + se_jaccard,
-      fill = .method_name
-    ),
-    alpha = 0.2
-  ) +
-  ggplot2::facet_grid(sim_name ~ tau_heritability, labeller = signal_labeller) +
-  ggplot2::scale_color_manual(
-    breaks = KEEP_METHODS,
-    values = COLORS,
-    labels = stringr::str_remove(KEEP_METHODS, " \\(pruned\\)")
-  ) +
-  ggplot2::scale_fill_manual(
-    breaks = KEEP_METHODS,
-    values = COLORS,
-    labels = stringr::str_remove(KEEP_METHODS, " \\(pruned\\)")
-  ) +
-  ggplot2::coord_cartesian(xlim = c(1, 4)) +
-  ggplot2::scale_x_continuous(
-    breaks = 1:4
-  ) +
-  ggplot2::labs(
-    x = "Tree Depth",
-    y = "Mean Jaccard Stability",
-    color = "Method",
-    fill = "Method"
-  ) +
-  vthemes::theme_vmodern(
-    size_preset = "medium", grid_color = "grey98"
+  patchwork::plot_layout(
+    axis_titles = "collect_y"
   )
 ggplot2::ggsave(
-  plt_stability, 
-  filename = file.path(FIG_DIR, "sim_stability.pdf"),
-  height = 12, 
+  plt, 
+  filename = file.path(
+    FIG_DIR, sprintf("sim_threshold_distances_nreps_crossfit.pdf")
+  ),
+  height = 9, 
+  width = 8 #14
+)
+```
+
+### Threshold Distributions
+
+```{r}
+KEEP_HERITABILITY <- c(0.2, 0.6, 1)
+
+# without covariates
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Thresholds Distribution Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        tau_heritability %in% KEEP_HERITABILITY
+      )
+    plt$layers[[1]]$mapping <- ggplot2::aes(
+      x = nreps_crossfit, 
+      y = raw_threshold,
+      fill = nreps_crossfit
+    )
+    plt$layers[[2]]$mapping <- ggplot2::aes(
+      x = nreps_crossfit, 
+      y = raw_threshold,
+      color = nreps_crossfit
+    )
+    plt <- plt +
+      ggplot2::scale_color_manual(
+        values = CROSSFIT_COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        values = CROSSFIT_COLORS
+      ) +
+      ggplot2::facet_grid(.var ~ tau_heritability, labeller = signal_labeller) +
+      ggplot2::labs(
+        title = sprintf("(%s) %s", tag, sim_name),
+        x = "# of Repeated Crossfits",
+        color = "# of Repeated\nCrossfits",
+        fill = "# of Repeated\nCrossfits"
+      ) +
+      ggplot2::theme(
+        axis.ticks.x = ggplot2::element_line(),
+        axis.title.x = ggplot2::element_text(size = 14, face = "bold"),
+        axis.text.x = ggplot2::element_text(size = 10),
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        )
+      ) +
+      ggplot2::guides(color = "none", fill = "none")
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1, guides = "collect"
+  ) +
+  patchwork::plot_layout(
+    axes = "collect"
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_thresholds_nreps_crossfit.pdf"),
+  height = 10, 
+  width = 10
+)
+```
+
+## Rulefit Simulations
+
+```{r results = "asis"}
+sim_results_dir <- here::here(
+  file.path("results", "Rulefit Simulations")
+)
+SIM_NAMES <- c(
+  "AND DGP" = "AND DGP",
+  "Additive DGP" = "Additive DGP",
+  "OR DGP" = "OR DGP",
+  "AND with Linear Covariates DGP" = "AND DGP with Linear Covariates",
+  "Additive with Linear Covariates DGP" = "Additive DGP with Linear Covariates",
+  "OR with Linear Covariates DGP" = "OR DGP with Linear Covariates"
+)
+
+# load in results
+eval_results_ls <- list()
+viz_results_ls <- list()
+for (sim_name in names(SIM_NAMES)) {
+  # fit_results <- readRDS(
+  #   file.path(
+  #     sim_results_dir, sim_name, "Varying tau_heritability", "fit_results.rds"
+  #   )
+  # )
+  eval_results <- readRDS(
+    file.path(
+      sim_results_dir, sim_name, "Varying tau_heritability", "eval_results.rds"
+    )
+  )
+  viz_results <- visualize_experiment(
+    rulefit_experiment, NULL, eval_results
+  )
+  eval_results_ls[[SIM_NAMES[[sim_name]]]] <- eval_results
+  viz_results_ls[[SIM_NAMES[[sim_name]]]] <- viz_results
+}
+```
+
+### Selected Subgroup Features + Estimated Subgroup CATEs
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Causal Forest (rulefit v1)",
+  "Distilled Causal Forest (rulefit v2)",
+  "Distilled Causal Forest (rulefit v3)",
+  "Distilled Causal Forest (rulefit v4)"
+)
+
+## without covariates
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::map(
+  sim_names,
+  function(sim_name) {
+    plt_name <- stringr::str_replace(sim_name, "with ", "with\n")
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Feature Selection Errors Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      ) |> 
+      rename_rulefit_methods()
+    plt_selection <- plt +
+      ggplot2::scale_color_manual(
+        values = RULEFIT_COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        values = RULEFIT_COLORS
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Subgroup CATE Errors Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      ) |> 
+      rename_rulefit_methods()
+    plt_cate <- plt +
+      ggplot2::scale_color_manual(
+        values = RULEFIT_COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        values = RULEFIT_COLORS
+      ) +
+      ggplot2::labs(
+        y = "CATE RMSE"
+      ) +
+      ggplot2::theme(
+        strip.background = ggplot2::element_blank(),
+        strip.placement = "outside",
+        axis.title.y = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(face = "bold", size = 16),
+        legend.text = ggplot2::element_text(size = 12)
+      )
+    plt <- patchwork::wrap_plots(
+      plt_selection, plt_cate, nrow = 1, guides = "collect", widths = c(3.5, 1)
+    ) &
+      ggplot2::labs(x = NULL)
+    
+    if (sim_name != sim_names[2]) {
+      plt <- plt &
+        ggplot2::guides(
+          color = "none", fill = "none"
+        )
+      hjust <- 0.78
+    } else {
+      hjust <- 0.82
+    }
+    if (sim_name == sim_names[1]) {
+      plt[[1]] <- plt[[1]] +
+        ggplot2::labs(
+          title = "(A) Selected Subgroup Features"
+        )
+      plt[[2]] <- plt[[2]] +
+        ggplot2::labs(
+          title = "(B) Estimated Subgroup CATEs"
+        )
+    }
+    plt[[1]] <- plt[[1]] +
+      ggplot2::labs(
+        tag = plt_name
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 18, face = "italic", angle = 90, hjust = 0.5, vjust = 1
+        ),
+        plot.tag.position = c(-.03, 0.48),
+        plot.margin = ggplot2::unit(c(0, 0.35, 0, 0.5), units = "in")
+      )
+    plt <- plt &
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5, vjust = -1
+        )
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1
+  ) |>
+  patchwork::wrap_elements() +
+  ggplot2::labs(
+    tag = expression(
+      bold(paste("Proportion of Variance Explained in ", tau, " by Covariates"))
+    )
+  ) +
+  ggplot2::theme(
+    plot.tag = ggplot2::element_text(
+      size = 16
+    ),
+    plot.tag.position = c(0.5, 0),
+    plot.margin = ggplot2::unit(c(-0.1, 0, .2, -0.1), units = "in")
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_subgroup_errors_rulefit.pdf"),
+  height = 9, 
+  width = 14
+)
+
+## with covariates
+sim_names <- c(
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::map(
+  sim_names,
+  function(sim_name) {
+    plt_name <- stringr::str_replace(sim_name, "with ", "with\n")
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Feature Selection Errors Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      ) |> 
+      rename_rulefit_methods()
+    plt_selection <- plt +
+      ggplot2::scale_color_manual(
+        values = RULEFIT_COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        values = RULEFIT_COLORS
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Subgroup CATE Errors Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      ) |> 
+      rename_rulefit_methods()
+    plt_cate <- plt +
+      ggplot2::scale_color_manual(
+        values = RULEFIT_COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        values = RULEFIT_COLORS
+      ) +
+      ggplot2::labs(
+        y = "CATE RMSE"
+      ) +
+      ggplot2::theme(
+        strip.background = ggplot2::element_blank(),
+        strip.placement = "outside",
+        axis.title.y = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(face = "bold", size = 16),
+        legend.text = ggplot2::element_text(size = 12)
+      )
+    plt <- patchwork::wrap_plots(
+      plt_selection, plt_cate, nrow = 1, guides = "collect", widths = c(3.5, 1)
+    ) &
+      ggplot2::labs(x = NULL)
+    
+    if (sim_name != sim_names[2]) {
+      plt <- plt &
+        ggplot2::guides(
+          color = "none", fill = "none"
+        )
+      hjust <- 0.78
+    } else {
+      hjust <- 0.82
+    }
+    if (sim_name == sim_names[1]) {
+      plt[[1]] <- plt[[1]] +
+        ggplot2::labs(
+          title = "(A) Selected Subgroup Features"
+        )
+      plt[[2]] <- plt[[2]] +
+        ggplot2::labs(
+          title = "(B) Estimated Subgroup CATEs"
+        )
+    }
+    plt[[1]] <- plt[[1]] +
+      ggplot2::labs(
+        tag = plt_name
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 18, face = "italic", angle = 90, hjust = 0.5, vjust = 1
+        ),
+        plot.tag.position = c(-.06, 0.48),
+        plot.margin = ggplot2::unit(c(0, 0.35, 0, 0.75), units = "in")
+      )
+    plt <- plt &
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5, vjust = -1
+        )
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1
+  ) |>
+  patchwork::wrap_elements() +
+  ggplot2::labs(
+    tag = expression(
+      bold(paste("Proportion of Variance Explained in ", tau, " by Covariates"))
+    )
+  ) +
+  ggplot2::theme(
+    plot.tag = ggplot2::element_text(
+      size = 16
+    ),
+    plot.tag.position = c(0.45, 0),
+    plot.margin = ggplot2::unit(c(-0.1, 0, .2, -0.1), units = "in")
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_subgroup_errors_cov_rulefit.pdf"),
+  height = 9, 
+  width = 14
+)
+```
+
+### Thresholds Distances
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Causal Forest (rulefit v1)",
+  "Distilled Causal Forest (rulefit v2)",
+  "Distilled Causal Forest (rulefit v3)",
+  "Distilled Causal Forest (rulefit v4)"
+)
+
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP",
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Threshold Distances Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS
+      ) |> 
+      rename_rulefit_methods()
+    plt <- plt +
+      ggplot2::scale_color_manual(
+        values = RULEFIT_COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        values = RULEFIT_COLORS
+      ) +
+      ggplot2::labs(
+        title = sprintf("(%s) %s", tag, sim_name),
+        y = "Average  | Estimated Threshold - True Threshold |",
+        x = expression(
+          bold(
+            paste("Proportion of Variance Explained in ", tau, " by Covariates")
+          )
+        )
+      ) +
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        ),
+        axis.title = ggplot2::element_text(face = "bold", size = 16),
+        axis.text = ggplot2::element_text(size = 12),
+        legend.text = ggplot2::element_text(size = 12),
+        legend.title = ggplot2::element_text(size = 16),
+        strip.text = ggplot2::element_text(size = 14)
+      )
+    if (sim_name != sim_names[5]) {
+      plt <- plt +
+        ggplot2::guides(
+          color = "none", fill = "none"
+        )
+    }
+    if (stringr::str_detect(sim_name, "Linear")) {
+      plt <- plt + 
+        ggplot2::theme(
+          axis.title.y = ggplot2::element_blank(),
+          plot.margin = ggplot2::unit(c(0, 0, 0.1, 0.2), units = "in")
+        )
+    } else {
+      plt <- plt +
+        ggplot2::theme(
+          plot.margin = ggplot2::unit(c(0, 0.2, 0.1, 0), units = "in")
+        )
+    }
+    if (!stringr::str_detect(sim_name, "OR")) {
+      plt <- plt + 
+        ggplot2::theme(
+          axis.title.x = ggplot2::element_blank()
+        )
+    }
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 2, byrow = FALSE
+  ) +
+  patchwork::plot_layout(
+    axis_titles = "collect_y"
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(
+    FIG_DIR, sprintf("sim_threshold_distances_rulefit.pdf")
+  ),
+  height = 9, 
+  width = 14
+)
+```
+
+### Threshold Distributions
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Causal Forest (rulefit v1)",
+  "Distilled Causal Forest (rulefit v2)",
+  "Distilled Causal Forest (rulefit v3)",
+  "Distilled Causal Forest (rulefit v4)"
+)
+KEEP_HERITABILITY <- c(0.2, 0.6, 1)
+
+# without covariates
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Thresholds Distribution Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      ) |> 
+      rename_rulefit_methods()
+    plt <- plt +
+      ggplot2::scale_color_manual(
+        values = RULEFIT_COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        values = RULEFIT_COLORS
+      ) +
+      ggplot2::facet_grid(.var ~ tau_heritability, labeller = signal_labeller) +
+      ggplot2::labs(
+        title = sprintf("(%s) %s", tag, sim_name)
+      ) +
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        )
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1, guides = "collect"
+  ) +
+  patchwork::plot_layout(
+    axes = "collect"
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_thresholds_rulefit.pdf"),
+  height = 10, 
   width = 11
+)
+
+# with covariates
+sim_names <- c(
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Subgroup Thresholds Distribution Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      ) |> 
+      rename_rulefit_methods()
+    plt <- plt +
+      ggplot2::scale_color_manual(
+        values = RULEFIT_COLORS
+      ) +
+      ggplot2::scale_fill_manual(
+        values = RULEFIT_COLORS
+      ) +
+      ggplot2::facet_grid(.var ~ tau_heritability, labeller = signal_labeller) +
+      ggplot2::labs(
+        title = sprintf("(%s) %s", tag, sim_name)
+      ) +
+      ggplot2::theme(
+        panel.background = ggplot2::element_rect(fill = "grey98"),
+        panel.grid.major = ggplot2::element_line(color = "grey98"),
+        plot.title = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        )
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1, guides = "collect"
+  ) +
+  patchwork::plot_layout(
+    axes = "collect"
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_thresholds_cov_rulefit.pdf"),
+  height = 10, 
+  width = 11
+)
+```
+
+### Number of Feature Splits Heatmap
+
+```{r}
+KEEP_METHODS <- c(
+  "Distilled Causal Forest",
+  "Distilled Causal Forest (rulefit v1)",
+  "Distilled Causal Forest (rulefit v2)",
+  "Distilled Causal Forest (rulefit v3)",
+  "Distilled Causal Forest (rulefit v4)"
+)
+KEEP_HERITABILITY <- c(0.2, 0.6, 1)
+
+# without covariates
+sim_names <- c(
+  "AND DGP",
+  "Additive DGP",
+  "OR DGP"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Number of Splits Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      ) |> 
+      rename_rulefit_methods()
+    plt_nsplits <- plt +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      viridis::scale_fill_viridis(
+        begin = 0.1, end = 1, option = "magma"#, limits = c(0., 4.5)
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Number of Trees Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      ) |> 
+      rename_rulefit_methods()
+    plt_ntrees <- plt +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      viridis::scale_fill_viridis(
+        begin = 0.1, end = 1, option = "magma", limits = c(0, 100)
+      )
+    
+    plt <- patchwork::wrap_plots(plt_ntrees, plt_nsplits, nrow = 1) +
+      patchwork::plot_layout(
+        axis_titles = "collect_y"
+      ) &
+      ggplot2::labs(x = "Variable")
+    plt <- patchwork::wrap_elements(plt) +
+      ggplot2::labs(
+        tag = sprintf("(%s) %s", tag, sim_name)
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        ),
+        plot.tag.position = c(0.47, 1.02),
+        plot.margin = ggplot2::unit(c(0.3, 0, 0, 0.5), units = "in")
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_freq_rulefit.pdf"),
+  height = 17.5, 
+  width = 15
+)
+
+# with covariates
+sim_names <- c(
+  "AND DGP with Linear Covariates",
+  "Additive DGP with Linear Covariates",
+  "OR DGP with Linear Covariates"
+)
+plt <- purrr::imap(
+  sim_names,
+  function(sim_name, idx) {
+    tag <- LETTERS[idx]
+    plt <- viz_results_ls[[sim_name]]$`Number of Splits Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      ) |> 
+      rename_rulefit_methods()
+    plt_nsplits <- plt +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      viridis::scale_fill_viridis(
+        begin = 0.1, end = 1, option = "magma"#, limits = c(0., 4.5)
+      )
+    
+    plt <- viz_results_ls[[sim_name]]$`Number of Trees Plot`
+    plt$data <- plt$data |>
+      dplyr::filter(
+        .method_name %in% KEEP_METHODS,
+        tau_heritability %in% KEEP_HERITABILITY
+      ) |> 
+      rename_rulefit_methods()
+    plt_ntrees <- plt +
+      ggplot2::facet_grid(tau_heritability ~ ., labeller = signal_labeller) +
+      viridis::scale_fill_viridis(
+        begin = 0.1, end = 1, option = "magma", limits = c(0, 100)
+      )
+    
+    plt <- patchwork::wrap_plots(plt_ntrees, plt_nsplits, nrow = 1) +
+      patchwork::plot_layout(
+        axis_titles = "collect_y"
+      ) &
+      ggplot2::labs(x = "Variable")
+    plt <- patchwork::wrap_elements(plt) +
+      ggplot2::labs(
+        tag = sprintf("(%s) %s", tag, sim_name)
+      ) +
+      ggplot2::theme(
+        plot.tag = ggplot2::element_text(
+          size = 18, face = "italic", hjust = 0.5
+        ),
+        plot.tag.position = c(0.47, 1.02),
+        plot.margin = ggplot2::unit(c(0.3, 0, 0, 0.5), units = "in")
+      )
+    return(plt)
+  }
+) |>
+  patchwork::wrap_plots(
+    ncol = 1
+  )
+ggplot2::ggsave(
+  plt, 
+  filename = file.path(FIG_DIR, "sim_freq_cov_rulefit.pdf"),
+  height = 17.5, 
+  width = 15
 )
 ```

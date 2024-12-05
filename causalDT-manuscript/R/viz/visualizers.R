@@ -64,17 +64,6 @@ plot_subgroup_feature_selection_err <- function(fit_results = NULL,
       axis.title.y = ggplot2::element_blank()
     )
 
-  # if (!is.null(vary_params)) {
-  #   if (identical(vary_params, "tau_heritability")) {
-  #     plt <- plt +
-  #       ggplot2::labs(
-  #         x = expression(
-  #           bold(paste("Proportion of Variance Explained in ", tau))
-  #         )
-  #       )
-  #   }
-  # }
-
   return(plt)
 }
 
@@ -84,6 +73,7 @@ plot_subgroup_thresholds <- function(fit_results = NULL,
                                      vary_params = NULL,
                                      eval_name = "Thresholds Summary",
                                      feature_col = ".var",
+                                     x_str = ".method_name",
                                      rm_methods = c("Linear Regression", "Lasso"),
                                      method_levels = NULL,
                                      show = c("violin", "boxplot"),
@@ -112,6 +102,21 @@ plot_subgroup_thresholds <- function(fit_results = NULL,
     )
 
   if (identical(show, "dotplot")) {
+    if (length(vary_params) == 1) {
+      facet_layer <- ggplot2::facet_grid(
+        rows = ggplot2::vars(!!rlang::sym(vary_params)),
+        cols = ggplot2::vars(!!rlang::sym(feature_col))
+      )
+    } else if (length(vary_params) > 1) {
+      facet_layer <- ggplot2::facet_grid(
+        rows = ggplot2::vars(!!!rlang::syms(vary_params)),
+        cols = ggplot2::vars(!!rlang::sym(feature_col))
+      )
+    } else {
+      facet_layer <- ggplot2::facet_wrap(
+        ggplot2::vars(!!rlang::sym(feature_col))
+      )
+    }
     plt <- plt_df |>
       ggplot2::ggplot() +
       ggplot2::aes(
@@ -119,10 +124,7 @@ plot_subgroup_thresholds <- function(fit_results = NULL,
         y = raw_threshold,
         fill = .method_name
       ) +
-      ggplot2::facet_grid(
-        rows = ggplot2::vars(!!rlang::sym(vary_params)),
-        cols = ggplot2::vars(!!rlang::sym(feature_col))
-      ) +
+      facet_layer +
       # ggplot2::facet_wrap(
       #   ~ .data[[vary_params]], nrow = 1
       # ) +
@@ -203,10 +205,17 @@ plot_subgroup_thresholds <- function(fit_results = NULL,
             ggplot2::vars(!!rlang::sym(feature_col)),
             scales = "free_y"
           )
-      } else {
+      } else if (length(vary_params) == 1) {
         plt <- plt +
           ggplot2::facet_grid(
             cols = ggplot2::vars(!!rlang::sym(vary_params)),
+            rows = ggplot2::vars(!!rlang::sym(feature_col)),
+            scales = "free_y"
+          )
+      } else {
+        plt <- plt +
+          ggplot2::facet_grid(
+            cols = ggplot2::vars(!!!rlang::syms(vary_params)),
             rows = ggplot2::vars(!!rlang::sym(feature_col)),
             scales = "free_y"
           )
@@ -325,11 +334,6 @@ plot_subgroup_nsplits <- function(fit_results = NULL,
       discrete = FALSE, viridis_option = "magma"
     ) +
     vthemes::theme_vmodern(...) +
-    # ggplot2::theme(
-    #   axis.text.x = ggplot2::element_blank(),
-    #   axis.title.x = ggplot2::element_blank(),
-    #   axis.ticks.x = ggplot2::element_blank()
-    # ) +
     ggplot2::coord_cartesian(expand = FALSE)
 
   if (!is.null(vary_params)) {
@@ -437,14 +441,6 @@ plot_stability_diagnostics <- function(fit_results,
     )
 
   plt1 <- plt_df |>
-    # tidyr::pivot_longer(
-    #   cols = c(jaccard, jaccard_scaled),
-    #   names_to = "metric",
-    #   values_to = "value"
-    # ) |>
-    # dplyr::group_by(
-    #   dplyr::across(tidyselect::all_of(c(group_cols, "depth", "metric")))
-    # ) |>
     dplyr::group_by(
       dplyr::across(tidyselect::all_of(c(group_cols, "depth")))
     ) |>
@@ -475,58 +471,6 @@ plot_stability_diagnostics <- function(fit_results,
     vthemes::scale_color_vmodern(discrete = TRUE) +
     vthemes::scale_fill_vmodern(discrete = TRUE) +
     vthemes::theme_vmodern(...)
-
-  # plt_df_wide <- plt_df |>
-  #   tidyr::pivot_wider(
-  #     names_from = .method_name,
-  #     values_from = jaccard
-  #   ) #|>
-  #   # dplyr::select(
-  #   #   -`Causal Tree (unpruned)`
-  #   # )
-  #
-  # plt_df_diff <- plt_df_wide |>
-  #   dplyr::mutate(
-  #     dplyr::across(
-  #       tidyselect::contains("Distilled"),
-  #       ~ .x - `Causal Tree (pruned)`
-  #     )
-  #   ) |>
-  #   tidyr::pivot_longer(
-  #     cols = tidyselect::contains("Distilled"),
-  #     names_to = ".method_name",
-  #     values_to = "jaccard"
-  #   )
-  #
-  # plt2 <- plt_df_diff |>
-  #   dplyr::filter(depth <= !!max_depth) |>
-  #   ggplot2::ggplot() +
-  #   ggplot2::geom_violin(
-  #     ggplot2::aes(
-  #       x = depth,
-  #       y = jaccard,
-  #       fill = .method_name,
-  #       group = interaction(depth, .method_name)
-  #     ),
-  #     alpha = 0.4,
-  #     color = "transparent",
-  #     position = ggplot2::position_dodge(0.9),
-  #     scale = "width"
-  #   ) +
-  #   ggplot2::geom_boxplot(
-  #     ggplot2::aes(
-  #       x = depth,
-  #       y = jaccard,
-  #       color = .method_name,
-  #       group = interaction(depth, .method_name)
-  #     ),
-  #     width = 0.2,
-  #     alpha = 0,
-  #     position = ggplot2::position_dodge(0.9)
-  #   ) +
-  #   vthemes::scale_color_vmodern(discrete = TRUE) +
-  #   vthemes::scale_fill_vmodern(discrete = TRUE) +
-  #   vthemes::theme_vmodern(...)
 
   feature_plt_df <- fit_results |>
     dplyr::filter(
@@ -587,10 +531,6 @@ plot_stability_diagnostics <- function(fit_results,
         # rows = ggplot2::vars(metric),
         cols = ggplot2::vars(!!rlang::sym(vary_params))
       )
-    # plt2 <- plt2 +
-    #   ggplot2::facet_grid(
-    #     cols = ggplot2::vars(!!rlang::sym(vary_params))
-    #   )
     plt3 <- plt3 +
       ggplot2::facet_grid(
         rows = ggplot2::vars(!!rlang::sym(vary_params)),
@@ -598,35 +538,10 @@ plot_stability_diagnostics <- function(fit_results,
       )
   }
 
-  # plt_df_pairs <- plt_df_wide |>
-  #   dplyr::filter(depth <= 2) |>
-  #   dplyr::group_by(
-  #     dplyr::across(
-  #       tidyselect::all_of(c(".rep", ".dgp_name", vary_params))
-  #     )
-  #   ) |>
-  #   dplyr::summarise(
-  #     dplyr::across(
-  #       c(`Causal Tree (pruned)`, tidyselect::contains("Distilled")),
-  #       ~ mean(.x)
-  #     ),
-  #     .groups = "drop"
-  #   )
-  # col_idxs <- which(
-  #   (names(plt_df_pairs) == "Causal Tree (pruned)") |
-  #     stringr::str_detect(names(plt_df_pairs), "Distilled")
-  # )
-  # plt3 <- vdocs::plot_pairs(
-  #   plt_df_pairs, columns = col_idxs, color = plt_df_pairs[[vary_params]]
-  # ) +
-  #   ggplot2::geom_abline(slope = 1, intercept = 0)
-
   plt <- patchwork::wrap_plots(
     plt1, plt3, nrow = 2, ncol = 1, heights = c(1, 3)
   )
-  # plt <- patchwork::wrap_plots(
-  #   plt1, plt2, plt3, nrow = 3, ncol = 1, heights = c(1, 1, 3)
-  # )
+
   return(plt)
 }
 
