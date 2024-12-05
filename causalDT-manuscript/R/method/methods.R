@@ -96,7 +96,15 @@ causalDT_method <- function(X, Y, Z,
     subgroups_ls[[rpart_prune[1]]] <- results$student_fit$subgroups
     tree_info_ls[[rpart_prune[1]]] <- results$student_fit$tree_info
     predictions_ls[[rpart_prune[1]]] <- results$student_fit$predictions
-    group_cates_ls[[rpart_prune[1]]] <- results$estimate
+    if (!(identical(student_model, "rpart"))) {
+      group_cates_ls[[rpart_prune[1]]] <- tibble::tibble(
+        leaf_id = 1:nrow(X_est),
+        estimate = predict(results$student_fit$fit, data.frame(X_est)),
+        .sample_idxs = purrr::map(1:nrow(X_est), ~ .x)
+      )
+    } else {
+      group_cates_ls[[rpart_prune[1]]] <- results$estimate
+    }
   }
   end_time <- Sys.time()
 
