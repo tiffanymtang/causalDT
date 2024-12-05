@@ -1,5 +1,5 @@
 rm(list = ls())
-EXP_NAME <- "Main Simulations"
+EXP_NAME <- "Varying nrep crossfits"
 N_REPS <- 100
 SAVE <- TRUE
 # USE_CACHED <- FALSE
@@ -33,18 +33,18 @@ dgp <- gaussian_X_unbiased_Z_and
 print(dgp$name)
 
 source(here::here(file.path("meals", "shared_experiments.R")))
-experiment <- experiment |>
+crossfit_experiment <- crossfit_experiment |>
   add_dgp(dgp) |>
   add_vary_across(
     .dgp = dgp$name,
     tau_heritability = c(0.2, 0.4, 0.6, 0.8, 1)
   )
-# out <- run_experiment(experiment)
+# out <- run_experiment(crossfit_experiment)
 out <- run_experiment(
-  experiment, n_reps = N_REPS, save = SAVE,
+  crossfit_experiment, n_reps = N_REPS, save = SAVE,
   use_cached = USE_CACHED, checkpoint_n_reps = CHECKPOINT_N_REPS,
   future.globals = FUTURE_GLOBALS, future.packages = FUTURE_PACKAGES
 )
 
-render_docs(save_dir = file.path(experiment$get_save_dir(), dgp$name))
+render_docs(save_dir = file.path(crossfit_experiment$get_save_dir(), dgp$name))
 
