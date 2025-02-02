@@ -60,7 +60,9 @@ each leaf node in the decision tree).</p>
 <dd><p>Fitted subgroup model used to determine subgroup membership of
 individuals. Typically, this is a <code>party</code> or <code>rpart</code> object, but any model
 object that can be used to determine subgroup membership via
-<code>predict(fit, x, type = 'node')</code> can be used.</p></dd>
+<code>predict(fit, x, type = 'node')</code> can be used. If
+<code>predict(fit, x, type = 'node')</code> returns an error, then subgroups are
+determined based upon the unique values of <code>predict(fit, x)</code>.</p></dd>
 
 
 <dt id="arg-x">X<a class="anchor" aria-label="anchor" href="#arg-x"></a></dt>
