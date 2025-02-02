@@ -23,6 +23,39 @@ distilled_rlasso_method <- create_method(
   rpart_prune = "min"
 )
 
+# rulefit methods without stability diagnostics
+distilled_causal_forest_rulefit_v1_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (rulefit v1)",
+  teacher_model = "causal_forest",
+  student_model = "rulefit",
+  rulefit_args = NULL
+)
+
+distilled_causal_forest_rulefit_v2_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (rulefit v2)",
+  teacher_model = "causal_forest",
+  student_model = "rulefit",
+  rulefit_args = list(maxdepth = 2)
+)
+
+distilled_causal_forest_rulefit_v3_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (rulefit v3)",
+  teacher_model = "causal_forest",
+  student_model = "rulefit",
+  rulefit_args = list(type = "rules")
+)
+
+distilled_causal_forest_rulefit_v4_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled Causal Forest (rulefit v4)",
+  teacher_model = "causal_forest",
+  student_model = "rulefit",
+  rulefit_args = list(type = "rules", maxdepth = 2)
+)
+
 # with stability diagnostics
 distilled_causal_forest_stability_method <- create_method(
   .method_fun = causalDT_method,

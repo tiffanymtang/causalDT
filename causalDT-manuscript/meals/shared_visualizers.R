@@ -9,7 +9,13 @@ method_levels <- c(
   "Causal Tree",
   "Causal Tree (unpruned)",
   "Linear Regression",
-  "Lasso"
+  "Lasso",
+  "Distilled Causal Forest (rulefit v1)",
+  "Distilled Causal Forest (rulefit v2)",
+  "Distilled Causal Forest (rulefit v3)",
+  "Distilled Causal Forest (rulefit v4)",
+  "Distilled Causal Forest (rulefit v5)",
+  "Distilled Causal Forest (rulefit v6)"
 )
 
 num_subgroups_plot <- create_visualizer(

@@ -94,7 +94,9 @@ student_rpart <- function(X, y, method = "anova", rpart_control = NULL,
 #' @param fit Fitted subgroup model used to determine subgroup membership of
 #'   individuals. Typically, this is a `party` or `rpart` object, but any model
 #'   object that can be used to determine subgroup membership via
-#'   `predict(fit, x, type = 'node')` can be used.
+#'   `predict(fit, x, type = 'node')` can be used. If
+#'   `predict(fit, x, type = 'node')` returns an error, then subgroups are
+#'   determined based upon the unique values of `predict(fit, x)`.
 #'
 #' @returns
 #' Estimated subgroup average treatment effects tibble with the following columns:
@@ -132,7 +134,10 @@ estimate_group_cates <- function(fit, X, Y, Z) {
     if ("rpart" %in% class(fit)) {
       fit <- partykit::as.party(fit)
     }
-    leaf_ids <- predict(fit, data.frame(X), type = 'node')
+    leaf_ids <- tryCatch(
+      predict(fit, data.frame(X), type = 'node'),
+      error = function(e) as.numeric(as.factor(predict(fit, data.frame(X))))
+    )
   } else {
     leaf_ids <- NULL
   }

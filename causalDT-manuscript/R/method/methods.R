@@ -6,6 +6,7 @@ causalDT_method <- function(X, Y, Z,
                             student_model = "rpart",
                             rpart_control = NULL,
                             rpart_prune = c("none", "min", "1se"),
+                            rulefit_args = NULL,
                             nfolds_crossfit = NULL,
                             nreps_crossfit = NULL,
                             B_stability = 0,
@@ -20,6 +21,13 @@ causalDT_method <- function(X, Y, Z,
     rpart_prune0 <- "none"
   } else {
     rpart_prune0 <- rpart_prune
+  }
+
+  if (identical(student_model, "rulefit")) {
+    student_model <- do.call(
+      purrr::partial,
+      args = c(list(.f = student_rulefit), rulefit_args)
+    )
   }
 
   start_time <- Sys.time()
@@ -88,7 +96,15 @@ causalDT_method <- function(X, Y, Z,
     subgroups_ls[[rpart_prune[1]]] <- results$student_fit$subgroups
     tree_info_ls[[rpart_prune[1]]] <- results$student_fit$tree_info
     predictions_ls[[rpart_prune[1]]] <- results$student_fit$predictions
-    group_cates_ls[[rpart_prune[1]]] <- results$estimate
+    if (!(identical(student_model, "rpart"))) {
+      group_cates_ls[[rpart_prune[1]]] <- tibble::tibble(
+        leaf_id = 1:nrow(X_est),
+        estimate = predict(results$student_fit$fit, data.frame(X_est)),
+        .sample_idxs = purrr::map(1:nrow(X_est), ~ .x)
+      )
+    } else {
+      group_cates_ls[[rpart_prune[1]]] <- results$estimate
+    }
   }
   end_time <- Sys.time()
 

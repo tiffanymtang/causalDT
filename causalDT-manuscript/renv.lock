@@ -90,6 +90,19 @@
       ],
       "Hash": "1920b2f11133b12350024297d8a4ff4a"
     },
+    "MatrixModels": {
+      "Package": "MatrixModels",
+      "Version": "0.5-3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Matrix",
+        "R",
+        "methods",
+        "stats"
+      ],
+      "Hash": "0776bf7526869e0286b0463cb72fb211"
+    },
     "ModelMetrics": {
       "Package": "ModelMetrics",
       "Version": "1.2.2.2",
@@ -646,6 +659,18 @@
       ],
       "Hash": "4ef372b716824753719a8a38b258442d"
     },
+    "earth": {
+      "Package": "earth",
+      "Version": "5.3.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Formula",
+        "R",
+        "plotmo"
+      ],
+      "Hash": "1b4cb7d1e934109e5a1522500ae157ef"
+    },
     "evaluate": {
       "Package": "evaluate",
       "Version": "0.24.0",
@@ -694,6 +719,22 @@
         "rlang"
       ],
       "Hash": "c2efdd5f0bcd1ea861c2d4e2a883a67d"
+    },
+    "forcats": {
+      "Package": "forcats",
+      "Version": "1.0.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "cli",
+        "glue",
+        "lifecycle",
+        "magrittr",
+        "rlang",
+        "tibble"
+      ],
+      "Hash": "1a0a9a3d5083d0d573c4214576f1e690"
     },
     "foreach": {
       "Package": "foreach",
@@ -1568,6 +1609,32 @@
       ],
       "Hash": "a1ac5c03ad5ad12b9d1597e00e23c3dd"
     },
+    "plotmo": {
+      "Package": "plotmo",
+      "Version": "3.6.4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Formula",
+        "R",
+        "plotrix"
+      ],
+      "Hash": "48db7ec460e44b2f354d675d0cf2bb8c"
+    },
+    "plotrix": {
+      "Package": "plotrix",
+      "Version": "3.8-4",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "grDevices",
+        "graphics",
+        "stats",
+        "utils"
+      ],
+      "Hash": "d47fdfc45aeba360ce9db50643de3fbd"
+    },
     "plyr": {
       "Package": "plyr",
       "Version": "1.8.9",
@@ -1585,6 +1652,27 @@
       "Source": "Repository",
       "Repository": "RSPM",
       "Hash": "a555924add98c99d2f411e37e7d25e9f"
+    },
+    "pre": {
+      "Package": "pre",
+      "Version": "1.0.7",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Formula",
+        "Matrix",
+        "MatrixModels",
+        "R",
+        "earth",
+        "glmnet",
+        "graphics",
+        "methods",
+        "partykit",
+        "rpart",
+        "stringr",
+        "survival"
+      ],
+      "Hash": "adadabd1e92519cb0867fa94b7fa64e7"
     },
     "processx": {
       "Package": "processx",
