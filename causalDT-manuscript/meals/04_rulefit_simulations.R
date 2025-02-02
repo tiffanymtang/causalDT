@@ -1,7 +1,7 @@
 rm(list = ls())
 EXP_NAME <- "Rulefit Simulations"
 N_REPS <- 100
-SAVE <- TRUE
+SAVE <- c("fit", "eval")
 # USE_CACHED <- FALSE
 USE_CACHED <- TRUE
 CHECKPOINT_N_REPS <- 0
@@ -13,7 +13,6 @@ N_REPS <- 100
 #### Cluster setup for parallelization (or comment out) ####
 # n_workers <- min(N_REPS, availableCores() - 1)
 n_workers <- 8
-# n_workers <- 2
 plan(multisession, workers = n_workers)
 
 #### DGPs ####
@@ -49,15 +48,16 @@ for (dgp in dgps) {
       .dgp = dgp$name,
       tau_heritability = c(0.2, 0.4, 0.6, 0.8, 1)
     )
-  fit_results <- fit_experiment(
-    rulefit_experiment, n_reps = N_REPS, save = SAVE,
+  out <- run_experiment(
+    experiment, n_reps = N_REPS, save = SAVE,
     use_cached = USE_CACHED, checkpoint_n_reps = CHECKPOINT_N_REPS,
     future.globals = FUTURE_GLOBALS, future.packages = FUTURE_PACKAGES
   )
-  eval_results <- evaluate_experiment(
-    rulefit_experiment, fit_results, save = SAVE, use_cached = USE_CACHED
-  )
-}
 
-render_docs(save_dir = file.path(rulefit_experiment$get_save_dir(), dgp$name))
+  # render_docs(
+  #   save_dir = file.path(rulefit_experiment$get_save_dir(), dgp$name),
+  #   show_eval = FALSE,
+  #   viz_cache = "none"
+  # )
+}
 

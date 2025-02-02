@@ -1,7 +1,7 @@
 rm(list = ls())
 EXP_NAME <- "AIDS"
 N_REPS <- 100
-SAVE <- TRUE
+SAVE <- c("fit", "eval")
 # USE_CACHED <- FALSE
 USE_CACHED <- TRUE
 CHECKPOINT_N_REPS <- 0
@@ -42,19 +42,6 @@ out <- run_experiment(
   use_cached = USE_CACHED, checkpoint_n_reps = CHECKPOINT_N_REPS,
   future.globals = FUTURE_GLOBALS, future.packages = FUTURE_PACKAGES
 )
-
-# rwd_experiment <- rwd_experiment |>
-#   add_dgp(dgp) |>
-#   add_vary_across(
-#     .dgp = dgp$name,
-#     subsample = c(100, 200, 300, 400, 500, 600, 792) / 792
-#   )
-# # out <- run_experiment(rwd_experiment)
-# out <- run_experiment(
-#   rwd_experiment, n_reps = N_REPS, save = SAVE,
-#   use_cached = USE_CACHED, checkpoint_n_reps = CHECKPOINT_N_REPS,
-#   future.globals = FUTURE_GLOBALS, future.packages = FUTURE_PACKAGES
-# )
 
 render_docs(rwd_experiment)
 

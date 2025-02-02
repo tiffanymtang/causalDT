@@ -1,7 +1,7 @@
 rm(list = ls())
 EXP_NAME <- "Main Simulations"
 N_REPS <- 100
-SAVE <- TRUE
+SAVE <- c("fit", "eval")
 # USE_CACHED <- FALSE
 USE_CACHED <- TRUE
 CHECKPOINT_N_REPS <- 0
@@ -53,6 +53,3 @@ for (dgp in dgps) {
     future.globals = FUTURE_GLOBALS, future.packages = FUTURE_PACKAGES
   )
 }
-
-render_docs(save_dir = example_experiment$get_save_dir())
-

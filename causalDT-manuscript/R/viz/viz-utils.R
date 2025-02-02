@@ -1,42 +1,40 @@
-get_best_distilled_method_info <- function(fit_results,
-                                           vary_params = NULL,
-                                           max_depths = 1:4) {
-  id_cols <- c(".rep", ".dgp_name", ".method_name", vary_params)
-
-  best_methods_df <- fit_results |>
-    dplyr::filter(
-      stringr::str_detect(.method_name, "Distilled")
-    ) |>
-    dplyr::mutate(
-      jaccard = purrr::map(
-        stability_diagnostics,
-        ~ tibble::tibble(
-          # depth = 1:length(.x$jaccard_mean),
-          # jaccard = .x$jaccard_mean
-          depth = 1:length(.x$jaccard_scaled_mean),
-          jaccard = .x$jaccard_scaled_mean
-        )
+preprocess_crossfit_results <- function(eval_results) {
+  eval_results <- purrr::map(
+    eval_results,
+    ~ .x |>
+      dplyr::filter(
+        !stringr::str_detect(.method_name, "unpruned"),
+        !stringr::str_detect(.method_name, "Causal Forest")
+      ) |>
+      dplyr::mutate(
+        .method_name = stringr::str_remove_all(.method_name, " \\(.*\\)"),
+        nreps_crossfit = tidyr::replace_na(nreps_crossfit, 0) |>
+          as.factor() |>
+          forcats::fct_inseq()
       )
-    ) |>
-    dplyr::select(
-      tidyselect::all_of(id_cols), jaccard
-    ) |>
-    tidyr::unnest(jaccard) |>
-    dplyr::filter(depth <= max(!!max_depths)) |>
-    dplyr::group_by(
-      dplyr::across(tidyselect::all_of(id_cols))
-    ) |>
-    dplyr::mutate(
-      cum_jaccard = cumsum(jaccard)
-    ) |>
-    dplyr::filter(depth %in% !!max_depths) |>
-    dplyr::group_by(
-      dplyr::across(
-        tidyselect::all_of(c(".rep", ".dgp_name", vary_params, "depth"))
-      )
-    ) |>
-    dplyr::slice_max(cum_jaccard)
-
-  return(best_methods_df)
+  )
+  return(eval_results)
 }
 
+
+preprocess_rulefit_results <- function(eval_results) {
+  eval_results <- purrr::map(
+    eval_results,
+    ~ .x |>
+      dplyr::mutate(
+        .method_name = dplyr::case_when(
+          .method_name == "Distilled Causal Forest" ~ "CART",
+          .method_name == "Distilled Causal Forest (rulefit v1)" ~
+            "Rulefit (linear + rules, max depth = 3)",
+          .method_name == "Distilled Causal Forest (rulefit v2)" ~
+            "Rulefit (linear + rules, max depth = 2)",
+          .method_name == "Distilled Causal Forest (rulefit v3)" ~
+            "Rulefit (rules only, max depth = 3)",
+          .method_name == "Distilled Causal Forest (rulefit v4)" ~
+            "Rulefit (rules only, max depth = 2)",
+          TRUE ~ .method_name
+        )
+      )
+  )
+  return(eval_results)
+}

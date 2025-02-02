@@ -1,7 +1,7 @@
 rm(list = ls())
 EXP_NAME <- "Varying nrep crossfits"
 N_REPS <- 100
-SAVE <- TRUE
+SAVE <- c("fit", "eval")
 # USE_CACHED <- FALSE
 USE_CACHED <- TRUE
 CHECKPOINT_N_REPS <- 0
@@ -45,6 +45,3 @@ out <- run_experiment(
   use_cached = USE_CACHED, checkpoint_n_reps = CHECKPOINT_N_REPS,
   future.globals = FUTURE_GLOBALS, future.packages = FUTURE_PACKAGES
 )
-
-render_docs(save_dir = file.path(crossfit_experiment$get_save_dir(), dgp$name))
-

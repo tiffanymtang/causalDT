@@ -67,39 +67,6 @@ gaussian_X_unbiased_Z_additive_cov <- create_dgp(
   y_err_sd = 0.1
 )
 
-gaussian_X_unbiased_Z_null <- create_dgp(
-  .dgp_fun = generate_subgroup_dgp,
-  .name = "No Subgroup DGP",
-  n = 500, p = 10,
-  X_fun = generate_gaussian_X,
-  Z_fun = generate_unbiased_Z,
-  tau_fun = generate_tau_null,
-  tau_err_sd = 0.2,
-  y_err_sd = 0.1
-)
-
-theory_p1_gaussian_X_unbiased_Z_tau <- create_dgp(
-  .dgp_fun = generate_subgroup_dgp,
-  .name = "Theory Sim (p = 1)",
-  n = 500, p = 1,
-  X_fun = generate_gaussian_X,
-  Z_fun = generate_unbiased_Z,
-  tau_fun = generate_tau_simple,
-  tau_heritability = 0.2,
-  y_err_sd = 0.1
-)
-
-theory_p10_gaussian_X_unbiased_Z_tau <- create_dgp(
-  .dgp_fun = generate_subgroup_dgp,
-  .name = "Theory Sim (p = 10)",
-  n = 500, p = 10,
-  X_fun = generate_gaussian_X,
-  Z_fun = generate_unbiased_Z,
-  tau_fun = generate_tau_simple,
-  tau_heritability = 0.2,
-  y_err_sd = 0.1
-)
-
 aids_dgp <- create_dgp(
   .dgp_fun = rwd_dgp,
   .name = "AIDS DGP",

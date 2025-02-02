@@ -16,13 +16,6 @@ distilled_rboost_method <- create_method(
   rpart_prune = "min"
 )
 
-distilled_rlasso_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Rlasso",
-  teacher_model = causalDT::rlasso,
-  rpart_prune = "min"
-)
-
 # rulefit methods without stability diagnostics
 distilled_causal_forest_rulefit_v1_method <- create_method(
   .method_fun = causalDT_method,
@@ -73,41 +66,13 @@ distilled_rboost_stability_method <- create_method(
   rpart_prune = "min"
 )
 
-distilled_rlasso_stability_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Rlasso",
-  teacher_model = causalDT::rlasso,
-  B_stability = 100,
-  rpart_prune = "min"
-)
-
-distilled_rboost_no_crossfit_stability_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Rboost (no crossfit)",
-  teacher_model = causalDT::rboost,
-  B_stability = 100,
-  nfolds_crossfit = 1,
-  nreps_crossfit = 1,
-  rpart_prune = "min"
-)
-
-distilled_rlasso_no_crossfit_stability_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Rlasso (no crossfit)",
-  teacher_model = causalDT::rlasso,
-  B_stability = 100,
-  nfolds_crossfit = 1,
-  nreps_crossfit = 1,
-  rpart_prune = "min"
-)
-
 # with stability diagnostics and pruning options
 distilled_causal_forest_stability_pruned_method <- create_method(
   .method_fun = causalDT_method,
   .name = "Distilled Causal Forest",
   teacher_model = "causal_forest",
   B_stability = 100,
-  rpart_prune = c("none", "min", "1se")
+  rpart_prune = c("none", "min")
 )
 
 distilled_rboost_stability_pruned_method <- create_method(
@@ -115,43 +80,7 @@ distilled_rboost_stability_pruned_method <- create_method(
   .name = "Distilled Rboost",
   teacher_model = causalDT::rboost,
   B_stability = 100,
-  rpart_prune = c("none", "min", "1se")
-)
-
-distilled_rlasso_stability_pruned_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Rlasso",
-  teacher_model = causalDT::rlasso,
-  B_stability = 100,
-  rpart_prune = c("none", "min", "1se")
-)
-
-# with stability diagnostics, pruning options, and cp = 0
-distilled_causal_forest_stability_pruned_cp0_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Causal Forest (cp = 0)",
-  teacher_model = "causal_forest",
-  B_stability = 100,
-  rpart_prune = c("none", "min", "1se"),
-  rpart_control = rpart::rpart.control(cp = 0)
-)
-
-distilled_rboost_stability_pruned_cp0_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Rboost (cp = 0)",
-  teacher_model = causalDT::rboost,
-  B_stability = 100,
-  rpart_prune = c("none", "min", "1se"),
-  rpart_control = rpart::rpart.control(cp = 0)
-)
-
-distilled_rlasso_stability_pruned_cp0_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Rlasso (cp = 0)",
-  teacher_model = causalDT::rlasso,
-  B_stability = 100,
-  rpart_prune = c("none", "min", "1se"),
-  rpart_control = rpart::rpart.control(cp = 0)
+  rpart_prune = c("none", "min")
 )
 
 #### Causal Tree Methods ####
@@ -185,14 +114,10 @@ causal_tree_stability_pruned_method <- create_method(
   .method_fun = causal_tree,
   .name = "Causal Tree",
   B_stability = 100,
-  prune = c("none", "min", "1se")
+  prune = c("none", "min")
 )
 
 #### Other Baseline Methods ####
-# virtual_twins_method <- create_method(
-#   .method_fun = virtual_twins,
-#   .name = "Virtual Twins"
-# )
 virtual_twins_method <- create_method(
   .method_fun = virtual_twins,
   rpart_prune = "min",
@@ -228,16 +153,6 @@ distilled_rboost_no_crossfit_method <- create_method(
   prune = "min"
 )
 
-distilled_rlasso_no_crossfit_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Rlasso (no crossfit)",
-  teacher_model = causalDT::rlasso,
-  nfolds_crossfit = 1,
-  nreps_crossfit = 1,
-  prune = "min"
-)
-
-
 distilled_causal_forest_crossfit_method <- create_method(
   .method_fun = causalDT_method,
   .name = "Distilled Causal Forest (crossfit)",
@@ -254,38 +169,4 @@ distilled_rboost_crossfit_method <- create_method(
   nfolds_crossfit = 2,
   nreps_crossfit = 1,
   prune = "min"
-)
-
-distilled_rlasso_crossfit_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Rlasso (crossfit)",
-  teacher_model = causalDT::rlasso,
-  nfolds_crossfit = 2,
-  nreps_crossfit = 1,
-  prune = "min"
-)
-
-#### Stump Methods for Theory Sims ####
-distilled_causal_forest_stump_method <- create_method(
-  .method_fun = causalDT_method,
-  .name = "Distilled Causal Forest (stump)",
-  teacher_model = "causal_forest",
-  rpart_control = list(maxdepth = 1)
-)
-
-causal_tree_stump_method <- create_method(
-  .method_fun = causal_tree,
-  .name = "Causal Tree (stump)",
-  causaltree_args = list(
-    split.Rule = "CT",
-    cv.option = "CT",
-    split.Honest = TRUE,
-    cv.Honest = TRUE,
-    split.Bucket = FALSE,
-    xval = 5,
-    cp = 0,
-    minsize = 1,
-    propensity = 0.5,
-    maxdepth = 1
-  )
 )

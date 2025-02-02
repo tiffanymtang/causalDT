@@ -153,47 +153,6 @@ prune_tree <- function(fit, prune = c("none", "min", "1se")) {
 }
 
 
-add_pruned_fits <- function(fit_results,
-                            vary_params = NULL) {
-  keep_cols <- c(
-    ".rep", ".dgp_name", ".method_name", vary_params,
-    "holdout_idxs", "tau", "tau_denoised", "true_thresholds"
-  )
-  pruned_min_results <- fit_results |>
-    dplyr::filter(
-      stringr::str_detect(.method_name, "Distilled") |
-        (.method_name == "Causal Tree")
-    ) |>
-    dplyr::rowwise() |>
-    dplyr::mutate(
-      .method_name = paste0(.method_name, " (min-pruned)"),
-      pruned_results = list(prune_tree(fit[[1]], prune = "min"))
-    ) |>
-    dplyr::select(tidyselect::all_of(keep_cols), pruned_results) |>
-    tidyr::unnest(pruned_results, keep_empty = TRUE) |>
-    dplyr::ungroup()
-  pruned_1se_results <- fit_results |>
-    dplyr::filter(
-      stringr::str_detect(.method_name, "Distilled") |
-        (.method_name == "Causal Tree (unpruned)")
-    ) |>
-    dplyr::rowwise() |>
-    dplyr::mutate(
-      .method_name = paste0(.method_name, " (1se-pruned)"),
-      pruned_results = list(prune_tree(fit[[1]], prune = "1se"))
-    ) |>
-    dplyr::select(tidyselect::all_of(keep_cols), pruned_results) |>
-    tidyr::unnest(pruned_results, keep_empty = TRUE) |>
-    dplyr::ungroup()
-  fit_results <- dplyr::bind_rows(
-    fit_results,
-    pruned_min_results,
-    pruned_1se_results
-  )
-  return(fit_results)
-}
-
-
 unnest_fit_results <- function(fit_results) {
   is_nested <- sapply(
     fit_results$fit,

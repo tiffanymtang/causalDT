@@ -303,7 +303,7 @@ eval_subgroup_threshold_dist <- function(fit_results,
 }
 
 
-eval_subgroup_cate_err <- function(fit_results,
+eval_subgroup_ate_err <- function(fit_results,
                                    vary_params = NULL,
                                    max_depth = NULL,
                                    nested_cols = NULL,
@@ -312,7 +312,7 @@ eval_subgroup_cate_err <- function(fit_results,
                                    summary_funs = c("mean", "median", "min",
                                                     "max", "sd", "raw"),
                                    custom_summary_funs = NULL,
-                                   eval_id = "cate_err") {
+                                   eval_id = "ate_err") {
 
   group_vars <- c(
     ".dgp_name", ".method_name", vary_params, group_cols, ".metric"
@@ -320,7 +320,7 @@ eval_subgroup_cate_err <- function(fit_results,
 
   fit_results <- unnest_fit_results(fit_results = fit_results)
 
-  subgroup_cate_err <- function(data) {
+  subgroup_ate_err <- function(data) {
     holdout_idxs <- data[["holdout_idxs"]][[1]]
     tau <- data[["tau_denoised"]][[1]]
     group_cates <- data[["group_cates"]][[1]]
@@ -380,7 +380,7 @@ eval_subgroup_cate_err <- function(fit_results,
 
   eval_data <- simChef::eval_constructor(
     fit_results = fit_results, vary_params = vary_params,
-    fun = subgroup_cate_err,
+    fun = subgroup_ate_err,
     nested_cols = nested_cols, group_cols = group_cols, na_rm = na_rm
   ) |>
     tidyr::unnest(.eval_result) |>

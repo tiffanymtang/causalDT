@@ -1,7 +1,7 @@
 rm(list = ls())
 EXP_NAME <- "Main Simulations"
 N_REPS <- 100
-SAVE <- TRUE
+SAVE <- c("fit", "eval")
 # USE_CACHED <- FALSE
 USE_CACHED <- TRUE
 CHECKPOINT_N_REPS <- 0
@@ -13,7 +13,6 @@ N_REPS <- 100
 #### Cluster setup for parallelization (or comment out) ####
 # n_workers <- min(N_REPS, availableCores() - 1)
 n_workers <- 8
-# n_workers <- 2
 plan(multisession, workers = n_workers)
 
 #### DGPs ####
@@ -46,6 +45,3 @@ out <- run_experiment(
   use_cached = USE_CACHED, checkpoint_n_reps = CHECKPOINT_N_REPS,
   future.globals = FUTURE_GLOBALS, future.packages = FUTURE_PACKAGES
 )
-
-render_docs(save_dir = file.path(experiment$get_save_dir(), dgp$name))
-

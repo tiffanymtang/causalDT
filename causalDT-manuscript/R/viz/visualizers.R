@@ -3,6 +3,7 @@ plot_subgroup_feature_selection_err <- function(fit_results = NULL,
                                                 vary_params = NULL,
                                                 eval_name = "Subgroup Feature Selection Errors Summary",
                                                 eval_id = "feature_selection_err",
+                                                preprocess_fun = NULL,
                                                 metrics = c(
                                                   "F1",
                                                   "# True Positives",
@@ -20,6 +21,9 @@ plot_subgroup_feature_selection_err <- function(fit_results = NULL,
                                                 legend_title_size = 16,
                                                 legend_text_size = 12,
                                                 ...) {
+  if (!is.null(preprocess_fun)) {
+    eval_results <- preprocess_fun(eval_results)
+  }
   eval_results[[eval_name]] <- eval_results[[eval_name]] |>
     dplyr::mutate(
       .metric = dplyr::case_when(
@@ -45,6 +49,7 @@ plot_subgroup_feature_selection_err <- function(fit_results = NULL,
     facet_type = facet_type,
     facet_args = facet_args,
     show = show,
+    linetype_str = ".method_name",
     ...
   ) +
     vthemes::theme_vmodern(
@@ -68,10 +73,34 @@ plot_subgroup_feature_selection_err <- function(fit_results = NULL,
 }
 
 
+plot_errors <- function(fit_results = NULL,
+                        eval_results,
+                        vary_params = NULL,
+                        eval_name,
+                        eval_id,
+                        preprocess_fun = NULL,
+                        ...) {
+  if (!is.null(preprocess_fun)) {
+    eval_results <- preprocess_fun(eval_results)
+  }
+
+  plt <- plot_pred_err(
+    eval_results = eval_results,
+    vary_params = vary_params,
+    eval_name = eval_name,
+    eval_id = eval_id,
+    linetype_str = ".method_name",
+    ...
+  )
+  return(plt)
+}
+
+
 plot_subgroup_thresholds <- function(fit_results = NULL,
                                      eval_results,
                                      vary_params = NULL,
                                      eval_name = "Thresholds Summary",
+                                     preprocess_fun = NULL,
                                      feature_col = ".var",
                                      x_str = ".method_name",
                                      rm_methods = c("Linear Regression", "Lasso"),
@@ -79,8 +108,11 @@ plot_subgroup_thresholds <- function(fit_results = NULL,
                                      show = c("violin", "boxplot"),
                                      show_true_vars_only = TRUE,
                                      show_true_threshold = TRUE,
+                                     add_ggplot_layers = NULL,
                                      ...) {
-
+  if (!is.null(preprocess_fun)) {
+    eval_results <- preprocess_fun(eval_results)
+  }
   if (!is.null(rm_methods)) {
     eval_results[[eval_name]] <- eval_results[[eval_name]] |>
       dplyr::filter(!(.method_name %in% !!rm_methods))
@@ -145,6 +177,7 @@ plot_subgroup_thresholds <- function(fit_results = NULL,
             x = .method_name,
             y = raw_threshold,
             fill = .method_name,
+            color = .method_name
           ),
           alpha = 0.4,
           color = "transparent",
@@ -261,6 +294,12 @@ plot_subgroup_thresholds <- function(fit_results = NULL,
       )
   }
 
+  if (!is.null(add_ggplot_layers)) {
+    for (ggplot_layer in add_ggplot_layers) {
+      plt <- plt + ggplot_layer
+    }
+  }
+
   return(plt)
 }
 
@@ -269,15 +308,14 @@ plot_subgroup_nsplits <- function(fit_results = NULL,
                                   eval_results,
                                   vary_params = NULL,
                                   eval_name = "Thresholds Summary",
+                                  preprocess_fun = NULL,
                                   rm_methods = NULL,
                                   method_levels = NULL,
-                                  type = c("n_splits_per_tree", "n_trees"),
                                   ...) {
+  if (!is.null(preprocess_fun)) {
+    eval_results <- preprocess_fun(eval_results)
+  }
 
-  type_name <- dplyr::case_when(
-    type == "n_splits_per_tree" ~ "Average #\nSplits per Tree",
-    type == "n_trees" ~ "# Trees"
-  )
   if (!is.null(rm_methods)) {
     eval_results[[eval_name]] <- eval_results[[eval_name]] |>
       dplyr::filter(!(.method_name %in% !!rm_methods))
@@ -286,73 +324,84 @@ plot_subgroup_nsplits <- function(fit_results = NULL,
     method_levels <- unique(eval_results[[eval_name]]$.method_name)
   }
 
-  plt_df <- eval_results[[eval_name]] |>
-    dplyr::ungroup() |>
-    tidyr::pivot_wider(
-      id_cols = c(.dgp_name, .method_name, tidyselect::all_of(vary_params)),
-      names_from = ".var",
-      values_from = tidyselect::all_of(type),
-      values_fill = 0
-    ) |>
-    tidyr::pivot_longer(
-      cols = -c(.dgp_name, .method_name, tidyselect::all_of(vary_params)),
-      names_to = ".var",
-      values_to = type
-    ) |>
-    dplyr::mutate(
-      dplyr::across(
-        tidyselect::all_of(type), ~ round(.x, 1)
-      ),
-      .method_name = factor(
-        .method_name, levels = rev(method_levels)
-      )
+  plt_ls <- list()
+  for (type in c("n_trees", "n_splits_per_tree")) {
+    type_name <- dplyr::case_when(
+      type == "n_splits_per_tree" ~ "Average #\nSplits per Tree",
+      type == "n_trees" ~ "# Simulation\nReplicates"
     )
-  if (isTRUE(all(stringr::str_detect(plt_df$.var, "^X[0-9]+$")))) {
-    plt_df <- plt_df |>
+
+    plt_df <- eval_results[[eval_name]] |>
+      dplyr::ungroup() |>
+      tidyr::pivot_wider(
+        id_cols = c(.dgp_name, .method_name, tidyselect::all_of(vary_params)),
+        names_from = ".var",
+        values_from = tidyselect::all_of(type),
+        values_fill = 0
+      ) |>
+      tidyr::pivot_longer(
+        cols = -c(.dgp_name, .method_name, tidyselect::all_of(vary_params)),
+        names_to = ".var",
+        values_to = type
+      ) |>
       dplyr::mutate(
-        .var = factor(
-          .var,
-          levels = paste0(
-            "X", sort(unique(as.numeric(stringr::str_remove(.var, "X"))))
-          )
+        dplyr::across(
+          tidyselect::all_of(type), ~ round(.x, 1)
+        ),
+        .method_name = factor(
+          .method_name, levels = rev(method_levels)
         )
       )
-  }
+    if (isTRUE(all(stringr::str_detect(plt_df$.var, "^X[0-9]+$")))) {
+      plt_df <- plt_df |>
+        dplyr::mutate(
+          .var = factor(
+            .var,
+            levels = paste0(
+              "X", sort(unique(as.numeric(stringr::str_remove(.var, "X"))))
+            )
+          )
+        )
+    }
 
-  plt <- plt_df |>
-    ggplot2::ggplot() +
-    ggplot2::aes(
-      x = .var, y = .method_name,
-      fill = !!rlang::sym(type), label = !!rlang::sym(type)
-    ) +
-    ggplot2::geom_tile() +
-    ggplot2::geom_text() +
-    ggplot2::labs(
-      y = "Method", fill = type_name
-    ) +
-    vthemes::scale_fill_vmodern(
-      discrete = FALSE, viridis_option = "magma"
-    ) +
-    vthemes::theme_vmodern(...) +
-    ggplot2::coord_cartesian(expand = FALSE)
+    plt <- plt_df |>
+      ggplot2::ggplot() +
+      ggplot2::aes(
+        x = .var, y = .method_name,
+        fill = .data[[type]], label = .data[[type]]
+      ) +
+      ggplot2::geom_tile() +
+      ggplot2::geom_text() +
+      ggplot2::labs(
+        x = "Variable", y = "Method", fill = type_name
+      ) +
+      vthemes::scale_fill_vmodern(
+        discrete = FALSE, viridis_option = "magma"
+      ) +
+      vthemes::theme_vmodern(...) +
+      ggplot2::coord_cartesian(expand = FALSE)
 
-  if (!is.null(vary_params)) {
-    plt <- plt +
-      ggplot2::facet_grid(
-        rows = ggplot2::vars(!!rlang::sym(vary_params))
-      )
+    if (!is.null(vary_params)) {
+      plt <- plt +
+        ggplot2::facet_grid(
+          rows = ggplot2::vars(!!rlang::sym(vary_params))
+        )
+    }
+    plt_ls[[type]] <- plt
   }
+  plt <- patchwork::wrap_plots(plt_ls, nrow = 1) +
+    patchwork::plot_layout(axis_titles = "collect_y")
 
   return(plt)
 }
 
 
-plot_subgroup_cates <- function(fit_results,
-                                eval_results = NULL,
-                                vary_params = NULL,
-                                keep_methods = NULL,
-                                show = c("point", "density"),
-                                ...) {
+plot_subgroup_ates <- function(fit_results,
+                               eval_results = NULL,
+                               vary_params = NULL,
+                               keep_methods = NULL,
+                               show = c("point", "density"),
+                               ...) {
   show <- match.arg(show)
   id_cols <- c(".rep", ".dgp_name", ".method_name", vary_params)
 
@@ -412,6 +461,7 @@ plot_stability_diagnostics <- function(fit_results,
                                        eval_results,
                                        vary_params = NULL,
                                        max_depth = 4,
+                                       add_ggplot_layers = NULL,
                                        ...) {
   id_cols <- c(".rep", ".dgp_name", ".method_name", vary_params)
   group_cols <- c(".dgp_name", ".method_name", vary_params)
@@ -465,6 +515,9 @@ plot_stability_diagnostics <- function(fit_results,
       inherit.aes = FALSE,
       alpha = 0.2
     ) +
+    ggplot2::labs(
+      x = "Tree Depth", y = "Jaccard SSI", color = "Method", fill = "Method"
+    ) +
     # ggplot2::facet_grid(
     #   rows = ggplot2::vars(metric)
     # ) +
@@ -505,7 +558,7 @@ plot_stability_diagnostics <- function(fit_results,
       )
   }
 
-  plt3 <- feature_plt_df |>
+  plt2 <- feature_plt_df |>
     dplyr::filter(depth <= !!max_depth) |>
     dplyr::mutate(
       # .method_name = stringr::str_remove(.method_name, " \\(pruned\\)"),
@@ -523,23 +576,32 @@ plot_stability_diagnostics <- function(fit_results,
       cols = ggplot2::vars(depth)
     ) +
     vthemes::scale_fill_vmodern(discrete = TRUE) +
-    vthemes::theme_vmodern(...)
+    ggplot2::labs(x = "Method", y = "Proportion of Splits", fill = "Variable") +
+    vthemes::theme_vmodern(...) +
+    ggplot2::theme(
+      axis.text.x = ggplot2::element_text(angle = 90, hjust = 1, vjust = 0.5)
+    )
 
   if (!is.null(vary_params)) {
     plt1 <- plt1 +
       ggplot2::facet_grid(
-        # rows = ggplot2::vars(metric),
-        cols = ggplot2::vars(!!rlang::sym(vary_params))
+        rows = ggplot2::vars(!!rlang::sym(vary_params))
       )
-    plt3 <- plt3 +
+    plt2 <- plt2 +
       ggplot2::facet_grid(
         rows = ggplot2::vars(!!rlang::sym(vary_params)),
         cols = ggplot2::vars(depth)
       )
   }
 
+  if (!is.null(add_ggplot_layers)) {
+    for (ggplot_layer in add_ggplot_layers) {
+      plt1 <- plt1 + ggplot_layer
+    }
+  }
+
   plt <- patchwork::wrap_plots(
-    plt1, plt3, nrow = 2, ncol = 1, heights = c(1, 3)
+    plt1, plt2, nrow = 1, ncol = 2, widths = c(1, 3), guides = "collect"
   )
 
   return(plt)
