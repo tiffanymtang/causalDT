@@ -113,7 +113,9 @@ eval_subgroup_thresholds <- function(fit_results,
     } else {
       true_vars <- names(data[["true_thresholds"]][[1]])
     }
-    if (is.null(model_info) || (nrow(model_info) == 0)) {
+    if (is.null(model_info) ||
+        identical(model_info, list()) ||
+        isTRUE(nrow(model_info) == 0)) {
       return(NULL)
     }
     subgroup_thresholds <- model_info |>

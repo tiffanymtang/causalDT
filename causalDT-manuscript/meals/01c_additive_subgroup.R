@@ -1,5 +1,5 @@
 rm(list = ls())
-EXP_NAME <- "Unbiased W"
+EXP_NAME <- "Main Simulations"
 N_REPS <- 100
 SAVE <- TRUE
 # USE_CACHED <- FALSE
@@ -10,11 +10,11 @@ set.seed(331)
 source(here::here(file.path("meals", "setup.R")))
 N_REPS <- 100
 
-# #### Cluster setup for parallelization (or comment out) ####
-# # n_workers <- min(N_REPS, availableCores() - 1)
-# n_workers <- 8
-# # n_workers <- 2
-# plan(multisession, workers = n_workers)
+#### Cluster setup for parallelization (or comment out) ####
+# n_workers <- min(N_REPS, availableCores() - 1)
+n_workers <- 8
+# n_workers <- 2
+plan(multisession, workers = n_workers)
 
 #### DGPs ####
 
@@ -46,17 +46,6 @@ out <- run_experiment(
   use_cached = USE_CACHED, checkpoint_n_reps = CHECKPOINT_N_REPS,
   future.globals = FUTURE_GLOBALS, future.packages = FUTURE_PACKAGES
 )
-
-# fit_results <- get_cached_results(experiment, "fit")
-# eval_results <- get_cached_results(experiment, "eval")
-# viz_results <- visualize_experiment(experiment, fit_results, eval_results)
-# plotly::ggplotly(viz_results$`Subgroup Feature Selection Errors Plot`)
-# plotly::ggplotly(viz_results$`Subgroup CATE Errors Plot`)
-# viz_results$`Subgroup Thresholds Distribution Plot`
-# viz_results$`Number of Splits Plot`
-# viz_results$`Number of Trees Plot`
-# viz_results$`Subgroup CATEs Plot`
-# viz_results$`Subgroup Stability Diagnostics Plot`
 
 render_docs(save_dir = file.path(experiment$get_save_dir(), dgp$name))
 
