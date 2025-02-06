@@ -1,7 +1,7 @@
 rm(list = ls())
 EXP_NAME <- "Main Simulations"
 N_REPS <- 100
-SAVE <- c("fit", "eval")
+SAVE <- TRUE
 # USE_CACHED <- FALSE
 USE_CACHED <- TRUE
 CHECKPOINT_N_REPS <- 0
@@ -52,4 +52,5 @@ for (dgp in dgps) {
     use_cached = USE_CACHED, checkpoint_n_reps = CHECKPOINT_N_REPS,
     future.globals = FUTURE_GLOBALS, future.packages = FUTURE_PACKAGES
   )
+  export_visualizers(example_experiment)
 }

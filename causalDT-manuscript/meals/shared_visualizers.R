@@ -222,7 +222,7 @@ subgroup_threshold_dist_crossfit_plot$viz_params$add_ggplot_layers <- list(
 
 subgroup_nsplits_plot <- create_visualizer(
   .viz_fun = plot_subgroup_nsplits,
-  .name = "Feature/Split Frequency Plot",
+  .name = "Feature and Split Frequency Plots",
   method_levels = method_levels,
   size_preset = "medium",
   .doc_options = list(
@@ -232,7 +232,7 @@ subgroup_nsplits_plot <- create_visualizer(
 )
 
 subgroup_nsplits_max_depth2_plot <- subgroup_nsplits_plot$clone()
-subgroup_nsplits_max_depth2_plot$name <- "Feature/Split Frequency Plot (max depth = 2)"
+subgroup_nsplits_max_depth2_plot$name <- "Feature and Split Frequency Plots (max depth = 2)"
 subgroup_nsplits_max_depth2_plot$viz_params$eval_name <- "Thresholds Summary (max depth = 2)"
 
 subgroup_nsplits_rulefit_plot <- subgroup_nsplits_plot$clone()

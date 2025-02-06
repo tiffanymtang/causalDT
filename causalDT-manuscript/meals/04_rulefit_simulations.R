@@ -1,7 +1,7 @@
 rm(list = ls())
 EXP_NAME <- "Rulefit Simulations"
 N_REPS <- 100
-SAVE <- c("fit", "eval")
+SAVE <- TRUE
 # USE_CACHED <- FALSE
 USE_CACHED <- TRUE
 CHECKPOINT_N_REPS <- 0
@@ -53,11 +53,5 @@ for (dgp in dgps) {
     use_cached = USE_CACHED, checkpoint_n_reps = CHECKPOINT_N_REPS,
     future.globals = FUTURE_GLOBALS, future.packages = FUTURE_PACKAGES
   )
-
-  # render_docs(
-  #   save_dir = file.path(rulefit_experiment$get_save_dir(), dgp$name),
-  #   show_eval = FALSE,
-  #   viz_cache = "none"
-  # )
+  export_visualizers(rulefit_experiment)
 }
-
