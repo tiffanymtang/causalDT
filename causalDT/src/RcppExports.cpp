@@ -11,34 +11,21 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
-// jaccardCPP
-double jaccardCPP(NumericVector x, NumericVector y);
-RcppExport SEXP _causalDT_jaccardCPP(SEXP xSEXP, SEXP ySEXP) {
+// jaccardSSI
+double jaccardSSI(NumericVector x, NumericVector y);
+RcppExport SEXP _causalDT_jaccardSSI(SEXP xSEXP, SEXP ySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
     Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
     Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(jaccardCPP(x, y));
-    return rcpp_result_gen;
-END_RCPP
-}
-// jaccardScaledCPP
-double jaccardScaledCPP(NumericVector x, NumericVector y);
-RcppExport SEXP _causalDT_jaccardScaledCPP(SEXP xSEXP, SEXP ySEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
-    Rcpp::traits::input_parameter< NumericVector >::type y(ySEXP);
-    rcpp_result_gen = Rcpp::wrap(jaccardScaledCPP(x, y));
+    rcpp_result_gen = Rcpp::wrap(jaccardSSI(x, y));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_causalDT_jaccardCPP", (DL_FUNC) &_causalDT_jaccardCPP, 2},
-    {"_causalDT_jaccardScaledCPP", (DL_FUNC) &_causalDT_jaccardScaledCPP, 2},
+    {"_causalDT_jaccardSSI", (DL_FUNC) &_causalDT_jaccardSSI, 2},
     {NULL, NULL, 0}
 };
 

@@ -106,7 +106,6 @@ evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
   node_depths <- purrr::map(bootstrap_out, "node_depths")
 
   Js <- list()
-  Js_scaled <- list()
   preds_mean <- list()
   preds_var <- list()
   for (n_depth in 1:max_depth) {
@@ -152,21 +151,12 @@ evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
 
     J <- purrr::map_dbl(
       1:floor(length(bootstrap_fits) / 2),
-      ~ jaccardCPP(
-        bootstrap_leaf_ids[[.x * 2 - 1]],
-        bootstrap_leaf_ids[[.x * 2]]
-      )
-    )
-    Js[[n_depth]] <- J
-
-    J_scaled <- purrr::map_dbl(
-      1:floor(length(bootstrap_fits) / 2),
-      ~ jaccardScaledCPP(
+      ~ jaccardSSI(
         as.numeric(as.factor(bootstrap_leaf_ids[[.x * 2 - 1]])) - 1,
         as.numeric(as.factor(bootstrap_leaf_ids[[.x * 2]])) - 1
       )
     )
-    Js_scaled[[n_depth]] <- J_scaled
+    Js[[n_depth]] <- J
 
     preds_mean[[n_depth]] <- do.call(cbind, bootstrap_leaf_preds) |>
       rowMeans()
@@ -190,8 +180,6 @@ evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
   out <- list(
     "jaccard_mean" = sapply(Js, mean),
     "jaccard_distribution" = Js,
-    "jaccard_scaled_mean" = sapply(Js_scaled, mean),
-    "jaccard_scaled_distribution" = Js_scaled,
     "feature_distribution" = feature_dist,
     "bootstrap_predictions_mean" = preds_mean,
     "bootstrap_predictions_var" = preds_var,
