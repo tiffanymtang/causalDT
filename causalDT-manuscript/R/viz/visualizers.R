@@ -477,8 +477,7 @@ plot_stability_diagnostics <- function(fit_results,
         stability_diagnostics,
         ~ tibble::tibble(
           depth = 1:length(.x$jaccard_mean),
-          jaccard = .x$jaccard_mean,
-          jaccard_scaled = .x$jaccard_scaled_mean
+          jaccard = .x$jaccard_mean
         )
       )
     ) |>
@@ -495,9 +494,9 @@ plot_stability_diagnostics <- function(fit_results,
       dplyr::across(tidyselect::all_of(c(group_cols, "depth")))
     ) |>
     dplyr::summarise(
-      mean_jaccard = mean(jaccard_scaled),
-      sd_jaccard = sd(jaccard_scaled),
-      se_jaccard = sd(jaccard_scaled) / sqrt(dplyr::n()),
+      mean_jaccard = mean(jaccard),
+      sd_jaccard = sd(jaccard),
+      se_jaccard = sd(jaccard) / sqrt(dplyr::n()),
       .groups = "drop"
     ) |>
     ggplot2::ggplot() +
