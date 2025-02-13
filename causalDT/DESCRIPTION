@@ -17,10 +17,13 @@ LinkingTo:
     RcppArmadillo
 Imports: 
     dplyr,
+    ggparty,
+    ggplot2,
     grf,
     partykit,
     purrr,
     Rcpp,
+    rlang,
     rlearner (>= 1.1.0),
     rpart,
     stringr,
