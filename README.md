@@ -61,6 +61,15 @@ in the `speff2trial` R package.
 library(speff2trial)
 #> Loading required package: leaps
 #> Loading required package: survival
+library(dplyr)
+#> 
+#> Attaching package: 'dplyr'
+#> The following objects are masked from 'package:stats':
+#> 
+#>     filter, lag
+#> The following objects are masked from 'package:base':
+#> 
+#>     intersect, setdiff, setequal, union
 
 data <- speff2trial::ACTG175 |>
   dplyr::filter(arms %in% c(0, 2))
@@ -95,7 +104,7 @@ causal_forest_cdt <- causalDT(
 plot_cdt(causal_forest_cdt)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+![](causalDT/man/figures/README-causalDT-1.png)<!-- -->
 
 Note that when using CDT, a teacher model must be chosen (the default is
 a causal forest). To help researchers select an appropriate teacher
@@ -113,7 +122,7 @@ rboost_cdt <- causalDT(
 plot_jaccard(`Causal Forest` = causal_forest_cdt, `Rboost` = rboost_cdt)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](causalDT/man/figures/README-jaccard-1.png)<!-- -->
 
 ## Citation
 

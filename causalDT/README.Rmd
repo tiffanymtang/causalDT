@@ -7,7 +7,8 @@ output: github_document
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.path = file.path("man", "figures", "README-")
 )
 ```
 
@@ -34,9 +35,10 @@ devtools::install_github("tiffanymtang/causalDT", subdir = "causalDT")
 
 To illustrate an example usage of `causalDT`, we will use the AIDS Clinical Trials Group Study 175 (ACTG 175), a randomized controlled trial to determine the effectiveness of monotherapy compared to combination therapy on HIV-1-infected patients. This data can be found in the `speff2trial` R package.
 
-```{r}
+```{r load-data}
 # install.packages("speff2trial")
 library(speff2trial)
+library(dplyr)
 
 data <- speff2trial::ACTG175 |>
   dplyr::filter(arms %in% c(0, 2))
@@ -58,7 +60,7 @@ Y <- data |>
 
 Given the pre-treatment covariates data $X$, the treatment variable $Z$, and the response variable $Y$, we can run CDT as follows:
 
-```{r fig.width=12}
+```{r causalDT, fig.width=12}
 library(causalDT)
 
 set.seed(331)
@@ -72,7 +74,7 @@ plot_cdt(causal_forest_cdt)
 
 Note that when using CDT, a teacher model must be chosen (the default is a causal forest). To help researchers select an appropriate teacher model, the Jaccard subgroup stability index (SSI) was introduced in [Huang et al. (2025)](https://arxiv.org/abs/2502.07275). Generally, a higher Jaccard SSI indicates a better teacher model. This teacher model selection procedure can be run as follows:
 
-```{r}
+```{r jaccard}
 # selecting between causal forest versus rboost
 rboost_cdt <- causalDT(
   X = as.matrix(X), Y = Y, Z = Z,

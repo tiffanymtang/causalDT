@@ -8,7 +8,8 @@ plot_jaccard(...)
 }
 \arguments{
 \item{...}{Two or more causal distillation tree objects, each is typically
-the output of \code{\link{causalDT}}.}
+the output of \code{\link{causalDT}}. Arguments should be named (so that
+they are properly labeled in the resulting plot).}
 }
 \value{
 A plot of the Jaccard SSI for each tree depth.
@@ -28,6 +29,6 @@ Y <- 2 * Z * (X[, 1] > 0) + X[, 2] + rnorm(n, 0.1)
 
 cdt1 <- causalDT(X, Y, Z)
 cdt2 <- causalDT(X, Y, Z, teacher_model = rboost)
-plot_jaccard(cdt1, cdt2)
+plot_jaccard(`Causal Forest` = cdt1, `Rboost` = cdt2)
 
 }
