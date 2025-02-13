@@ -45,26 +45,80 @@
 </nav><div class="container template-home">
 <div class="row">
   <main id="main" class="col-md-9"><div class="section level1">
-<div class="page-header"><h1 id="causaldt">causalDT<a class="anchor" aria-label="anchor" href="#causaldt"></a>
+<div class="page-header"><h1 id="causal-distillation-trees">Causal Distillation Trees<a class="anchor" aria-label="anchor" href="#causal-distillation-trees"></a>
 </h1></div>
-<!-- badges: start -->
-
-<p>The goal of causalDT is to …</p>
+<p><a href="https://arxiv.org/abs/2502.07275" class="external-link">Causal Distillation Trees</a> (CDT) is a novel machine learning method for estimating interpretable subgroups in causal inference. CDT allows researchers to fit <em>any</em> machine learning model of their choice to estimate the individual-level treatment effect, and then leverages a simple, second-stage tree-based model to “distill” the estimated treatment effect into meaningful subgroups. As a result, CDT inherits the improvements in predictive performance from black-box machine learning models while preserving the interpretability of a simple decision tree.</p>
+<p><img src="../causalDT/reference/figures/cdt_diagram.png"></p>
+<p>Briefly, CDT is a two-stage learner that first fits a teacher model (e.g., a black-box metalearner) to estimate individual-level treatment effects and secondly fits a student model (e.g., a decision tree) to predict the estimated individual-level treatment effects, in effect distilling the estimated individual-level treatment effects and producing interpretable subgroups. This two-stage learner is learned using the training data. Finally, using the estimated subgroups, the subgroup average treatment effects are honestly estimated with a held-out estimation set.</p>
+<p>For more details, check out <a href="https://arxiv.org/abs/2502.07275" class="external-link">Huang, M., Tang, T. M., Kenney, A. M. “Distilling heterogeneous treatment effects: Stable subgroup estimation in causal inference.” (2025).</a></p>
 <div class="section level2">
-<h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
+<h2 id="installation-of-the-r-package">Installation of the R package<a class="anchor" aria-label="anchor" href="#installation-of-the-r-package"></a>
 </h2>
-<p>You can install the development version of causalDT from <a href="https://github.com/" class="external-link">GitHub</a> with:</p>
+<p>You can install the <code>causalDT</code> R package via:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># install.packages("pak")</span></span>
-<span><span class="fu">pak</span><span class="fu">::</span><span class="fu"><a href="https://pak.r-lib.org/reference/pak.html" class="external-link">pak</a></span><span class="op">(</span><span class="st">"tiffanymtang/causalDT"</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="co"># install.packages("devtools")</span></span>
+<span><span class="fu">devtools</span><span class="fu">::</span><span class="fu">install_github</span><span class="op">(</span><span class="st">"tiffanymtang/causalDT"</span>, subdir <span class="op">=</span> <span class="st">"causalDT"</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="example">Example<a class="anchor" aria-label="anchor" href="#example"></a>
+<h2 id="example-usage">Example Usage<a class="anchor" aria-label="anchor" href="#example-usage"></a>
 </h2>
-<p>This is a basic example which shows you how to solve a common problem:</p>
+<p>To illustrate an example usage of <code>causalDT</code>, we will use the AIDS Clinical Trials Group Study 175 (ACTG 175), a randomized controlled trial to determine the effectiveness of monotherapy compared to combination therapy on HIV-1-infected patients. This data can be found in the <code>speff2trial</code> R package.</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># install.packages("speff2trial")</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/mjuraska/speff2trial" class="external-link">speff2trial</a></span><span class="op">)</span></span>
+<span><span class="co">#&gt; Loading required package: leaps</span></span>
+<span><span class="co">#&gt; Loading required package: survival</span></span>
+<span></span>
+<span><span class="va">data</span> <span class="op">&lt;-</span> <span class="fu">speff2trial</span><span class="fu">::</span><span class="va">ACTG175</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html" class="external-link">filter</a></span><span class="op">(</span><span class="va">arms</span> <span class="op"><a href="https://rdrr.io/r/base/match.html" class="external-link">%in%</a></span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="fl">0</span>, <span class="fl">2</span><span class="op">)</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># pre-treatment covariates data</span></span>
+<span><span class="va">X</span> <span class="op">&lt;-</span> <span class="va">data</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span></span>
+<span>    <span class="va">age</span>, <span class="va">wtkg</span>, <span class="va">hemo</span>, <span class="va">homo</span>, <span class="va">drugs</span>, <span class="va">karnof</span>, <span class="va">race</span>, </span>
+<span>    <span class="va">gender</span>, <span class="va">symptom</span>, <span class="va">preanti</span>, <span class="va">strat</span>, <span class="va">cd80</span></span>
+<span>  <span class="op">)</span> <span class="op">|&gt;</span> </span>
+<span>  <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="co"># treatment indicator variable</span></span>
+<span><span class="va">Z</span> <span class="op">&lt;-</span> <span class="va">data</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html" class="external-link">pull</a></span><span class="op">(</span><span class="va">treat</span><span class="op">)</span></span>
+<span><span class="co"># response variable</span></span>
+<span><span class="va">Y</span> <span class="op">&lt;-</span> <span class="va">data</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu">dplyr</span><span class="fu">::</span><span class="fu"><a href="https://dplyr.tidyverse.org/reference/pull.html" class="external-link">pull</a></span><span class="op">(</span><span class="va">cens</span><span class="op">)</span></span></code></pre></div>
+<p>Given the pre-treatment covariates data <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>X</mi><annotation encoding="application/x-tex">X</annotation></semantics></math>, the treatment variable <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Z</mi><annotation encoding="application/x-tex">Z</annotation></semantics></math>, and the response variable <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mi>Y</mi><annotation encoding="application/x-tex">Y</annotation></semantics></math>, we can run CDT as follows:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://tiffanymtang.github.io/causalDT/">causalDT</a></span><span class="op">)</span></span>
-<span><span class="co">## basic example code</span></span></code></pre></div>
+<span></span>
+<span><span class="fu"><a href="https://rdrr.io/r/base/Random.html" class="external-link">set.seed</a></span><span class="op">(</span><span class="fl">331</span><span class="op">)</span></span>
+<span><span class="va">causal_forest_cdt</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/causalDT.html">causalDT</a></span><span class="op">(</span></span>
+<span>  X <span class="op">=</span> <span class="va">X</span>, Y <span class="op">=</span> <span class="va">Y</span>, Z <span class="op">=</span> <span class="va">Z</span>,</span>
+<span>  teacher_model <span class="op">=</span> <span class="st">"causal_forest"</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu"><a href="reference/plot_cdt.html">plot_cdt</a></span><span class="op">(</span><span class="va">causal_forest_cdt</span><span class="op">)</span></span></code></pre></div>
+<p><img src="README_files/figure-gfm/unnamed-chunk-3-1.png"><!-- --></p>
+<p>Note that when using CDT, a teacher model must be chosen (the default is a causal forest). To help researchers select an appropriate teacher model, the Jaccard subgroup stability index (SSI) was introduced in <a href="https://arxiv.org/abs/2502.07275" class="external-link">Huang et al. (2025)</a>. Generally, a higher Jaccard SSI indicates a better teacher model. This teacher model selection procedure can be run as follows:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># selecting between causal forest versus rboost</span></span>
+<span><span class="va">rboost_cdt</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/causalDT.html">causalDT</a></span><span class="op">(</span></span>
+<span>  X <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span>, Y <span class="op">=</span> <span class="va">Y</span>, Z <span class="op">=</span> <span class="va">Z</span>,</span>
+<span>  teacher_model <span class="op">=</span> <span class="va">rboost</span></span>
+<span><span class="op">)</span></span>
+<span><span class="fu"><a href="reference/plot_jaccard.html">plot_jaccard</a></span><span class="op">(</span>`Causal Forest` <span class="op">=</span> <span class="va">causal_forest_cdt</span>, `Rboost` <span class="op">=</span> <span class="va">rboost_cdt</span><span class="op">)</span></span></code></pre></div>
+<p><img src="README_files/figure-gfm/unnamed-chunk-4-1.png"><!-- --></p>
+</div>
+<div class="section level2">
+<h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
+</h2>
+<div class="sourceCode" id="cb5"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" tabindex="-1"></a><span class="sc">@</span>article{huang2025distilling,</span>
+<span id="cb5-2"><a href="#cb5-2" tabindex="-1"></a>  title<span class="ot">=</span>{Distilling heterogeneous treatment effects<span class="sc">:</span> Stable subgroup estimation <span class="cf">in</span> causal inference}, </span>
+<span id="cb5-3"><a href="#cb5-3" tabindex="-1"></a>  author<span class="ot">=</span>{Melody Huang and Tiffany M. Tang and Ana M. Kenney},</span>
+<span id="cb5-4"><a href="#cb5-4" tabindex="-1"></a>  year<span class="ot">=</span>{<span class="dv">2025</span>},</span>
+<span id="cb5-5"><a href="#cb5-5" tabindex="-1"></a>  eprint<span class="ot">=</span>{<span class="fl">2502.07275</span>},</span>
+<span id="cb5-6"><a href="#cb5-6" tabindex="-1"></a>  archivePrefix<span class="ot">=</span>{arXiv},</span>
+<span id="cb5-7"><a href="#cb5-7" tabindex="-1"></a>  primaryClass<span class="ot">=</span>{stat.ME},</span>
+<span id="cb5-8"><a href="#cb5-8" tabindex="-1"></a>  url<span class="ot">=</span>{https<span class="sc">:</span><span class="er">//</span>arxiv.org<span class="sc">/</span>abs<span class="sc">/</span><span class="fl">2502.07275</span>}, </span>
+<span id="cb5-9"><a href="#cb5-9" tabindex="-1"></a>}</span></code></pre></div>
 </div>
 </div>
   </main><aside class="col-md-3"><div class="license">
@@ -90,12 +144,7 @@
 </ul>
 </div>
 
-<div class="dev-status">
-<h2 data-toc-skip>Dev status</h2>
-<ul class="list-unstyled">
-<li><a href="https://github.com/tiffanymtang/causalDT/actions/workflows/R-CMD-check.yaml" class="external-link"><img src="https://github.com/tiffanymtang/causalDT/actions/workflows/R-CMD-check.yaml/badge.svg" alt="R-CMD-check"></a></li>
-</ul>
-</div>
+
 
   </aside>
 </div>
