@@ -37,7 +37,7 @@ This repository contains:
     data (see [causalDT/](causalDT/))
 2.  All code necessary to reproduce the analysis and figures in [Huang
     et al. (2025)](https://arxiv.org/abs/2502.07275) (see
-    [causalDT-manuscript/](causalDT-manuscript/))
+    [causalDT-manuscript/](causalDT-manuscript/) and additional results [here](https://tiffanymtang.github.io/causalDT/simulation_results.html))
 
 ## Installation of the R package
 

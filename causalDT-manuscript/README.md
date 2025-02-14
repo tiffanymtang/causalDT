@@ -57,8 +57,7 @@ renv::restore()
     documentation by running the `meals/00_render_docs.R` script.
 
 These steps will generate all of the figures and results from the
-mansucript. The rendered `simChef` documentation can be found in the
-`results/` directory (see [here](results/Results.html)).
+mansucript. The rendered `simChef` documentation can be found [here](https://tiffanymtang.github.io/causalDT/simulation_results.html).
 
 ## Citation
 
