@@ -1,5 +1,5 @@
 ---
-author: 'Melody Huang, Tiffany M. Tang, Ana M. Kenney'
+author: 'Melody Huang<sup>\*</sup>, Tiffany M. Tang<sup>\*</sup>, Ana M. Kenney'
 date: '`r format(Sys.time(), "%B %d, %Y")`'
 title: "Causal Distillation Trees: Supplemental Simulation Results"
 output: vthemes::vmodern
