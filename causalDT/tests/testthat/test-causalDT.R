@@ -21,6 +21,11 @@ test_that("causalDT works", {
 
   out <- causalDT(
     X = X, Y = Y, Z = Z,
+    teacher_model = "bcf"
+  )
+
+  out <- causalDT(
+    X = X, Y = Y, Z = Z,
     teacher_model = rlasso,
     nfolds_crossfit = 2,
     nreps_crossfit = 50

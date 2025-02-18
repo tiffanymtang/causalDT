@@ -1,9 +1,10 @@
 experiment <- create_experiment(
-  name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results", EXP_NAME)
+  name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results_bcf", EXP_NAME)
 ) |>
   ### distillation methods
   add_method(distilled_causal_forest_stability_pruned_method) |>
-  add_method(distilled_rboost_stability_pruned_method) |>
+  # add_method(distilled_rboost_stability_pruned_method) |>
+  add_method(distilled_bcf_stability_pruned_method) |>
   ### baseline causal tree methods
   add_method(causal_tree_stability_pruned_method) |>
   ### other existing methods
@@ -34,7 +35,7 @@ experiment <- create_experiment(
   # add_visualizer(subgroup_ates_plot) |>
 
 rulefit_experiment <- create_experiment(
-  name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results", EXP_NAME)
+  name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results_bcf", EXP_NAME)
 ) |>
   ### distillation methods
   add_method(distilled_causal_forest_method) |>
@@ -55,7 +56,7 @@ rulefit_experiment <- create_experiment(
   add_visualizer(subgroup_nsplits_rulefit_plot)
 
 crossfit_experiment <- create_experiment(
-  name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results", EXP_NAME)
+  name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results_bcf", EXP_NAME)
 ) |>
   ### distillation methods without crossfit
   add_method(distilled_rboost_no_crossfit_method) |>
@@ -76,11 +77,12 @@ crossfit_experiment <- create_experiment(
   add_visualizer(subgroup_ates_err_crossfit_plot)
 
 rwd_experiment <- create_experiment(
-  name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results", EXP_NAME)
+  name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results_bcf", EXP_NAME)
 ) |>
   ### distillation methods
   add_method(distilled_causal_forest_stability_pruned_method) |>
   add_method(distilled_rboost_stability_pruned_method) |>
+  add_method(distilled_bcf_stability_pruned_method) |>
   ### baseline causal tree methods
   add_method(causal_tree_stability_pruned_method) |>
   ### other existing methods
@@ -96,9 +98,10 @@ rwd_experiment <- create_experiment(
   add_visualizer(subgroup_stability_plot)
 
 example_experiment <- create_experiment(
-  name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results", EXP_NAME)
+  name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results_bcf", EXP_NAME)
 ) |>
   add_method(distilled_causal_forest_method) |>
+  add_method(distilled_bcf_method) |>
   add_method(causal_tree_method) |>
   add_evaluator(subgroup_feature_selection_errors_summary) |>
   add_visualizer(num_subgroups_plot)

@@ -7,6 +7,8 @@
 \alias{rboost}
 \alias{rlasso}
 \alias{rkern}
+\alias{bcf}
+\alias{predict_bcf}
 \title{Teacher models for causal distillation trees}
 \usage{
 causal_forest(X, Y, Z, ...)
@@ -18,6 +20,20 @@ rboost(X, Y, Z, ...)
 rlasso(X, Y, Z, ...)
 
 rkern(X, Y, Z, ...)
+
+bcf(
+  X,
+  Y,
+  Z,
+  pihat = "default",
+  w = NULL,
+  nburn = 2000,
+  nsim = 1000,
+  n_threads = 1,
+  ...
+)
+
+predict_bcf(...)
 }
 \arguments{
 \item{X}{A tibble, data.frame, or matrix of covariates.}
@@ -27,6 +43,16 @@ rkern(X, Y, Z, ...)
 \item{Z}{A vector of treatments.}
 
 \item{...}{Additional arguments to pass to the base model functions.}
+
+\item{pihat}{Length n estimates of propensity score}
+
+\item{w}{An optional vector of weights. When present, BCF fits a model \eqn{y | x ~ N(f(x), \sigma^2 / w)}, where \eqn{f(x)} is the unknown function.}
+
+\item{nburn}{Number of burn-in MCMC iterations}
+
+\item{nsim}{Number of MCMC iterations to save after burn-in. The chain will run for nsim*nthin iterations after burn-in}
+
+\item{n_threads}{An optional integer of the number of threads to parallelize within chain bcf operations on}
 }
 \description{
 These functions are wrappers around various heterogeneous treatment effect

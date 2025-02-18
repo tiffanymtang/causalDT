@@ -3,6 +3,8 @@ method_levels <- c(
   "Distilled Causal Forest (unpruned)",
   "Distilled Rboost",
   "Distilled Rboost (unpruned)",
+  "Distilled BCF",
+  "Distilled BCF (unpruned)",
   "Virtual Twins",
   "Causal Tree",
   "Causal Tree (unpruned)",
@@ -20,6 +22,8 @@ COLORS <- c(
   "Distilled Causal Forest (unpruned)" = "#1f5d8f",
   "Distilled Rboost" = "#6aafe4",
   "Distilled Rboost (unpruned)" = "#6aafe4",
+  "Distilled BCF" = "#1c3145",
+  "Distilled BCF (unpruned)" = "#1c3145",
   "Virtual Twins" = "#768c50",
   "Causal Tree" = "#953a2f",
   "Causal Tree (unpruned)" = "#953a2f",
@@ -36,6 +40,8 @@ LINETYPES <- c(
   "Distilled Causal Forest (unpruned)" = "dashed",
   "Distilled Rboost" = "solid",
   "Distilled Rboost (unpruned)" = "dashed",
+  "Distilled BCF" = "solid",
+  "Distilled BCF (unpruned)" = "dashed",
   "Virtual Twins" = "solid",
   "Causal Tree" = "solid",
   "Causal Tree (unpruned)" = "dashed",
@@ -51,6 +57,7 @@ LINETYPES <- c(
 COLORS2 <- COLORS
 COLORS2["Distilled Causal Forest (unpruned)"] <- "#96aac6"
 COLORS2["Distilled Rboost (unpruned)"] <- "#bad6f2"
+COLORS2["Distilled BCF (unpruned)"] <- "#d6d9dd"
 COLORS2["Causal Tree (unpruned)"] <- "#d09a90"
 
 CROSSFIT_COLORS <- c(

@@ -39,9 +39,11 @@ NULL
 #'   treatment effects. If NULL, a holdout set of size `holdout_prop` x nrow(X)
 #'   is randomly selected.
 #' @param teacher_model Teacher model used to estimate individual-level
-#'   treatment events. Should be either "causal_forest" (default) or a function.
+#'   treatment events. Should be either "causal_forest" (default),
+#'   "bcf", or a function.
 #'   If "causal_forest", \code{grf::causal_forest()} is used as the teacher
-#'   model. Otherwise, the function should take in the named arguments
+#'   model. If "bcf", \code{bcf::bcf()} is used as the teacher model.
+#'   Otherwise, the function should take in the named arguments
 #'   `X`, `Y`, `Z`, (corresponding to the covariates, outcome, and treatment
 #'   data, respectively) as well as (optional) additional arguments passed to
 #'   the function via `...`. Moreover, the function should return a model object
@@ -168,6 +170,21 @@ causalDT <- function(X, Y, Z,
     }
     if (is.null(nreps_crossfit)) {
       nreps_crossfit <- 1
+    }
+  } else if (identical(teacher_model, "bcf")) {
+    teacher_model <- bcf
+    teacher_predict <- predict_bcf
+    if (is.null(nfolds_crossfit)) {
+      nfolds_crossfit <- 1
+    }
+    if (nfolds_crossfit != 1) {
+      stop("`nfolds_crossfit` must be 1 when `teacher_model` is 'bcf'.")
+    }
+    if (is.null(nreps_crossfit)) {
+      nreps_crossfit <- 1
+    }
+    if (nreps_crossfit != 1) {
+      stop("`nreps_crossfit` must be 1 when `teacher_model` is 'bcf'.")
     }
   } else if (!is.function(teacher_model)) {
     stop("`teacher_model` must be a function or 'causal_forest'.")
