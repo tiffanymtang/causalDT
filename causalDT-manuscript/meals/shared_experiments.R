@@ -4,6 +4,7 @@ experiment <- create_experiment(
   ### distillation methods
   add_method(distilled_causal_forest_stability_pruned_method) |>
   add_method(distilled_rboost_stability_pruned_method) |>
+  add_method(distilled_bcf_stability_pruned_method) |>
   ### baseline causal tree methods
   add_method(causal_tree_stability_pruned_method) |>
   ### other existing methods
@@ -81,6 +82,7 @@ rwd_experiment <- create_experiment(
   ### distillation methods
   add_method(distilled_causal_forest_stability_pruned_method) |>
   add_method(distilled_rboost_stability_pruned_method) |>
+  add_method(distilled_bcf_stability_pruned_method) |>
   ### baseline causal tree methods
   add_method(causal_tree_stability_pruned_method) |>
   ### other existing methods
@@ -99,6 +101,7 @@ example_experiment <- create_experiment(
   name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results", EXP_NAME)
 ) |>
   add_method(distilled_causal_forest_method) |>
+  add_method(distilled_bcf_method) |>
   add_method(causal_tree_method) |>
   add_evaluator(subgroup_feature_selection_errors_summary) |>
   add_visualizer(num_subgroups_plot)

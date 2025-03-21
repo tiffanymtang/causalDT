@@ -37,9 +37,11 @@ treatment effects. If NULL, a holdout set of size \code{holdout_prop} x nrow(X)
 is randomly selected.}
 
 \item{teacher_model}{Teacher model used to estimate individual-level
-treatment events. Should be either "causal_forest" (default) or a function.
+treatment events. Should be either "causal_forest" (default),
+"bcf", or a function.
 If "causal_forest", \code{grf::causal_forest()} is used as the teacher
-model. Otherwise, the function should take in the named arguments
+model. If "bcf", \code{bcf::bcf()} is used as the teacher model.
+Otherwise, the function should take in the named arguments
 \code{X}, \code{Y}, \code{Z}, (corresponding to the covariates, outcome, and treatment
 data, respectively) as well as (optional) additional arguments passed to
 the function via \code{...}. Moreover, the function should return a model object

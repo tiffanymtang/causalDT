@@ -47,6 +47,34 @@
       ],
       "Hash": "7a29697b75e027767a53fde6c903eca7"
     },
+    "Hmisc": {
+      "Package": "Hmisc",
+      "Version": "5.2-2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Formula",
+        "R",
+        "base64enc",
+        "cluster",
+        "colorspace",
+        "data.table",
+        "foreign",
+        "ggplot2",
+        "grid",
+        "gridExtra",
+        "gtable",
+        "htmlTable",
+        "htmltools",
+        "knitr",
+        "methods",
+        "nnet",
+        "rmarkdown",
+        "rpart",
+        "viridis"
+      ],
+      "Hash": "ce88f29ff07b63c77f9b7ac747b9321b"
+    },
     "KernSmooth": {
       "Package": "KernSmooth",
       "Version": "2.23-24",
@@ -212,6 +240,16 @@
       ],
       "Hash": "4ac8e423216b8b70cb9653d1b3f71eb9"
     },
+    "RcppParallel": {
+      "Package": "RcppParallel",
+      "Version": "5.1.10",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R"
+      ],
+      "Hash": "34ee3ba92c1b2df651980325523ed22a"
+    },
     "SQUAREM": {
       "Package": "SQUAREM",
       "Version": "2021.1",
@@ -241,6 +279,24 @@
         "R"
       ],
       "Hash": "543776ae6848fde2f48ff3816d0628bc"
+    },
+    "bcf": {
+      "Package": "bcf",
+      "Version": "2.0.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "Hmisc",
+        "Rcpp",
+        "RcppArmadillo",
+        "RcppParallel",
+        "coda",
+        "doParallel",
+        "foreach",
+        "matrixStats",
+        "parallel"
+      ],
+      "Hash": "96b4c754d1b8d85452d15feefe6ea831"
     },
     "bookdown": {
       "Package": "bookdown",
@@ -340,7 +396,7 @@
     },
     "causalDT": {
       "Package": "causalDT",
-      "Version": "0.0.0.9000",
+      "Version": "0.0.1",
       "Source": "Local",
       "RemoteType": "local",
       "RemoteUrl": "../causalDT",
@@ -348,17 +404,21 @@
       "Requirements": [
         "Rcpp",
         "RcppArmadillo",
+        "bcf",
         "dplyr",
+        "ggparty",
+        "ggplot2",
         "grf",
         "partykit",
         "purrr",
+        "rlang",
         "rlearner",
         "rpart",
         "stringr",
         "tibble",
         "tidyselect"
       ],
-      "Hash": "1dae80a01b44163cb5fb9bb31ecb38f8"
+      "Hash": "8d17747aa14092c5ef154f41fe77e6dd"
     },
     "causalTree": {
       "Package": "causalTree",
@@ -380,6 +440,18 @@
         "stats"
       ],
       "Hash": "876e2d0a45038fbdec34975e41f58661"
+    },
+    "checkmate": {
+      "Package": "checkmate",
+      "Version": "2.3.2",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "backports",
+        "utils"
+      ],
+      "Hash": "0e14e01ce07e7c88fd25de6d4260d26b"
     },
     "class": {
       "Package": "class",
@@ -420,6 +492,31 @@
         "vctrs"
       ],
       "Hash": "3dcaebd52554438d12989e5061e15de8"
+    },
+    "cluster": {
+      "Package": "cluster",
+      "Version": "2.1.6",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "grDevices",
+        "graphics",
+        "stats",
+        "utils"
+      ],
+      "Hash": "0aaa05204035dc43ea0004b9c76611dd"
+    },
+    "coda": {
+      "Package": "coda",
+      "Version": "0.19-4.1",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "lattice"
+      ],
+      "Hash": "af436915c590afc6fffc3ce3a5be1569"
     },
     "codetools": {
       "Package": "codetools",
@@ -521,6 +618,20 @@
         "utils"
       ],
       "Hash": "33698c4b3127fc9f506654607fb73676"
+    },
+    "doParallel": {
+      "Package": "doParallel",
+      "Version": "1.0.17",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "foreach",
+        "iterators",
+        "parallel",
+        "utils"
+      ],
+      "Hash": "451e5edf411987991ab6a5410c45011f"
     },
     "dplyr": {
       "Package": "dplyr",
@@ -651,6 +762,19 @@
       ],
       "Hash": "618609b42c9406731ead03adf5379850"
     },
+    "foreign": {
+      "Package": "foreign",
+      "Version": "0.8-87",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "methods",
+        "stats",
+        "utils"
+      ],
+      "Hash": "81fc09bdeab0077a73927ed1243404b6"
+    },
     "fs": {
       "Package": "fs",
       "Version": "1.6.4",
@@ -701,6 +825,25 @@
         "methods"
       ],
       "Hash": "15e9634c0fcd294799e9b2e929ed1b86"
+    },
+    "ggparty": {
+      "Package": "ggparty",
+      "Version": "1.0.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "checkmate",
+        "ggplot2",
+        "grid",
+        "gtable",
+        "methods",
+        "partykit",
+        "rlang",
+        "survival",
+        "utils"
+      ],
+      "Hash": "11f98669ee7ddc8eb6b6bb9b46642362"
     },
     "ggplot2": {
       "Package": "ggplot2",
@@ -855,6 +998,24 @@
         "xfun"
       ],
       "Hash": "d65ba49117ca223614f71b60d85b8ab7"
+    },
+    "htmlTable": {
+      "Package": "htmlTable",
+      "Version": "2.4.3",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R",
+        "checkmate",
+        "htmltools",
+        "htmlwidgets",
+        "knitr",
+        "magrittr",
+        "methods",
+        "rstudioapi",
+        "stringr"
+      ],
+      "Hash": "ca027d8771f2c039aed82f00a81e725b"
     },
     "htmltools": {
       "Package": "htmltools",
@@ -1158,6 +1319,16 @@
         "R"
       ],
       "Hash": "7ce2733a9826b3aeb1775d56fd305472"
+    },
+    "matrixStats": {
+      "Package": "matrixStats",
+      "Version": "1.5.0",
+      "Source": "Repository",
+      "Repository": "CRAN",
+      "Requirements": [
+        "R"
+      ],
+      "Hash": "9fd316b52ac8c24fef4c67fdd646e965"
     },
     "memoise": {
       "Package": "memoise",

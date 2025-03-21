@@ -16,6 +16,19 @@ distilled_rboost_method <- create_method(
   rpart_prune = "min"
 )
 
+distilled_bcf_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled BCF",
+  teacher_model = purrr::partial(
+    causalDT::bcf, pihat = 0.5, n_threads = 1, verbose = FALSE, no_output = TRUE
+  ),
+  teacher_predict = causalDT::predict_bcf,
+  nfolds_crossfit = 1,
+  nreps_crossfit = 1,
+  rpart_prune = "min"
+)
+
+
 # rulefit methods without stability diagnostics
 distilled_causal_forest_rulefit_v1_method <- create_method(
   .method_fun = causalDT_method,
@@ -66,6 +79,19 @@ distilled_rboost_stability_method <- create_method(
   rpart_prune = "min"
 )
 
+distilled_bcf_stability_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled BCF",
+  teacher_model = purrr::partial(
+    causalDT::bcf, pihat = 0.5, n_threads = 1, verbose = FALSE, no_output = TRUE
+  ),
+  teacher_predict = causalDT::predict_bcf,
+  nfolds_crossfit = 1,
+  nreps_crossfit = 1,
+  B_stability = 100,
+  rpart_prune = "min"
+)
+
 # with stability diagnostics and pruning options
 distilled_causal_forest_stability_pruned_method <- create_method(
   .method_fun = causalDT_method,
@@ -79,6 +105,19 @@ distilled_rboost_stability_pruned_method <- create_method(
   .method_fun = causalDT_method,
   .name = "Distilled Rboost",
   teacher_model = causalDT::rboost,
+  B_stability = 100,
+  rpart_prune = c("none", "min")
+)
+
+distilled_bcf_stability_pruned_method <- create_method(
+  .method_fun = causalDT_method,
+  .name = "Distilled BCF",
+  teacher_model = purrr::partial(
+    causalDT::bcf, pihat = 0.5, n_threads = 1, verbose = FALSE, no_output = TRUE
+  ),
+  teacher_predict = causalDT::predict_bcf,
+  nfolds_crossfit = 1,
+  nreps_crossfit = 1,
   B_stability = 100,
   rpart_prune = c("none", "min")
 )

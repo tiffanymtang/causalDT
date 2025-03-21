@@ -18,6 +18,7 @@ LinkingTo:
     Rcpp,
     RcppArmadillo
 Imports: 
+    bcf,
     dplyr,
     ggparty,
     ggplot2,
