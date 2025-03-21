@@ -37,4 +37,23 @@ test_that("causalDT works", {
       teacher_model = teacher_model
     )
   }
+
+  # testing with weights
+  W <- runif(n)
+  out <- causalDT(
+    X = X, Y = Y, Z = Z, W = W,
+    teacher_model = "causal_forest"
+  )
+
+  out <- causalDT(
+    X = X, Y = Y, Z = Z, W = W,
+    teacher_model = "bcf"
+  )
+
+  out <- causalDT(
+    X = X, Y = Y, Z = Z, W = W,
+    teacher_model = rlasso,
+    nfolds_crossfit = 2,
+    nreps_crossfit = 50
+  )
 })

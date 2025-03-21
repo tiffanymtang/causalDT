@@ -25,6 +25,7 @@ Imports:
     grf,
     partykit,
     purrr,
+    R.utils,
     Rcpp,
     rlang,
     rlearner (>= 1.1.0),

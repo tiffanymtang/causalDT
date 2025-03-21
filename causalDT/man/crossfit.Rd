@@ -4,7 +4,7 @@
 \alias{crossfit}
 \title{Crossfit wrapper around estimators}
 \usage{
-crossfit(estimator, X, Y, Z, split_idxs, ...)
+crossfit(estimator, X, Y, Z, W = NULL, split_idxs, ...)
 }
 \description{
 Crossfit wrapper around estimators

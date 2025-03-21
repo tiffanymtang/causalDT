@@ -1,24 +1,31 @@
 #' Crossfit wrapper around estimators
 #'
 #' @keywords internal
-crossfit <- function(estimator, X, Y, Z, split_idxs, ...) {
+crossfit <- function(estimator, X, Y, Z, W = NULL, split_idxs, ...) {
   nfolds <- length(unique(split_idxs))
   fit_ls <- list()
+  dots_ls <- rlang::dots_list(...)
+  if (length(dots_ls) == 0) {
+    dots_ls <- NULL
+  }
   for (foldid in 1:nfolds) {
     if (nfolds == 1) {
       train_idxs <- rep(TRUE, length(split_idxs))
     } else {
       train_idxs <- split_idxs != foldid
     }
-    fit_ls[[foldid]] <- do.call(
+    fit_ls[[foldid]] <- R.utils::doCall(
       estimator,
-      args = c(
+      alwaysArgs = c(
         list(
           X = X[train_idxs, , drop = FALSE],
           Y = Y[train_idxs],
           Z = Z[train_idxs]
         ),
-        ...
+        dots_ls
+      ),
+      args = list(
+        W = W[train_idxs]
       )
     )
   }

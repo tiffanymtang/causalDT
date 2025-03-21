@@ -22,9 +22,9 @@ NULL
 
 #' @rdname teacher_models
 #' @export
-causal_forest <- function(X, Y, Z, ...) {
+causal_forest <- function(X, Y, Z, W = NULL, ...) {
   grf::causal_forest(
-    X = X, Y = Y, W = Z, ...
+    X = X, Y = Y, W = Z, W.hat = W, ...
   )
 }
 
@@ -36,37 +36,41 @@ predict_causal_forest <- function(...) {
 
 #' @rdname teacher_models
 #' @export
-rboost <- function(X, Y, Z, ...) {
+rboost <- function(X, Y, Z, W = NULL, ...) {
   rlearner::rboost(
-    x = X, y = Y, w = Z, ...
+    x = X, y = Y, w = Z, p_hat = W, ...
   )
 }
 
 #' @rdname teacher_models
 #' @export
-rlasso <- function(X, Y, Z, ...) {
+rlasso <- function(X, Y, Z, W = NULL, ...) {
   rlearner::rlasso(
-    x = X, y = Y, w = Z, ...
+    x = X, y = Y, w = Z, p_hat = W, ...
   )
 }
 
 #' @rdname teacher_models
 #' @export
-rkern <- function(X, Y, Z, ...) {
+rkern <- function(X, Y, Z, W = NULL, ...) {
   rlearner::rkern(
-    x = X, y = Y, w = Z, ...
+    x = X, y = Y, w = Z, p_hat = W, ...
   )
 }
 
 #' @rdname teacher_models
 #' @export
-bcf <- function(X, Y, Z, pihat = "default", w = NULL,
+bcf <- function(X, Y, Z, W = NULL, pihat = "default", w = NULL,
                 nburn = 2000, nsim = 1000, n_threads = 1, ...) {
-  if (identical(pihat, "default")) {
-    pihat_fit <- glm(Z ~ X, family = "binomial")
-    pihat <- predict(pihat_fit, data.frame(X), type = "response")
-  } else if (length(pihat) == 1) {
-    pihat <- rep(pihat, nrow(X))
+  if (is.null(W)) {
+    if (identical(pihat, "default")) {
+      pihat_fit <- glm(Z ~ X, family = "binomial")
+      pihat <- predict(pihat_fit, data.frame(X), type = "response")
+    } else if (length(pihat) == 1) {
+      pihat <- rep(pihat, nrow(X))
+    }
+  } else {
+    pihat <- W
   }
   if (is.null(w)) {
     w <- rep(1, nrow(X))

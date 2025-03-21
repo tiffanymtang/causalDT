@@ -12,6 +12,8 @@
 
 \item{Z}{A vector of treatments.}
 
+\item{W}{A vector of weights corresponding to treatment propensities.}
+
 \item{rpart_control}{A list of control parameters for the \code{rpart} algorithm.
 See \code{? rpart.control} for details.}
 
