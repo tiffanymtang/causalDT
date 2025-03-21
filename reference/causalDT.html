@@ -85,9 +85,11 @@ is randomly selected.</p></dd>
 
 <dt id="arg-teacher-model">teacher_model<a class="anchor" aria-label="anchor" href="#arg-teacher-model"></a></dt>
 <dd><p>Teacher model used to estimate individual-level
-treatment events. Should be either "causal_forest" (default) or a function.
+treatment events. Should be either "causal_forest" (default),
+"bcf", or a function.
 If "causal_forest", <code><a href="https://rdrr.io/pkg/grf/man/causal_forest.html" class="external-link">grf::causal_forest()</a></code> is used as the teacher
-model. Otherwise, the function should take in the named arguments
+model. If "bcf", <code><a href="https://rdrr.io/pkg/bcf/man/bcf.html" class="external-link">bcf::bcf()</a></code> is used as the teacher model.
+Otherwise, the function should take in the named arguments
 <code>X</code>, <code>Y</code>, <code>Z</code>, (corresponding to the covariates, outcome, and treatment
 data, respectively) as well as (optional) additional arguments passed to
 the function via <code>...</code>. Moreover, the function should return a model object
