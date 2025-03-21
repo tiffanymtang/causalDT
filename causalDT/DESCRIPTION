@@ -23,6 +23,7 @@ Imports:
     ggparty,
     ggplot2,
     grf,
+    mclust,
     partykit,
     purrr,
     Rcpp,

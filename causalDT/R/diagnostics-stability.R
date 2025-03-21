@@ -189,4 +189,126 @@ evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
 }
 
 
+#' Evaluate stability of generic HTE estimator
+#'
+#' @description This function computes the stability of a general HTE estimator,
+#'   fitted across different subsamples of the data. At a high-level, for each
+#'   pair of estimated treatment effect vectors (each estimated using a
+#'   different subsample of the data), some metric (e.g., Jaccard, Adjusted
+#'   Rand Index, or Spearman correlation) is computed to assess the similarity
+#'   between the two candidates. Since Jaccard and Adjusted Rand Index are
+#'   metrics for comparing sets, the estimated treatment effects are discretized
+#'   into `n_strata` strata before computing the metric.
+#'
+#' @inheritParams shared_args
+#'
+#' @param estimator Function used to estimate individual-level treatment
+#'   estimates. The function should take in `X`, `y`, and `Z` (which can be
+#'   `NULL`) and return a vector of estimated treatment effects (should be
+#'   vector of length equal to number of rows in `X`.
+#' @param n_strata Number of strata used to discretize the estimated treatment
+#'   effects when calculating the Jaccard index or Adjusted Rand Index. Default
+#'   is 2:10.
+#' @param metrics Vector of metrics to use in evaluating stability. Options
+#'   include "jaccard", "ARI", and "spearman". Default is all metrics.
+#' @param subsample Proportion of the data to use in each replicate. Default is
+#'   0.8.
+#' @param B Number of subsamples to use in evaluating stability diagnostics.
+#'   Default is 100.
+#'
+#' @returns A list with the following elements:
+#' \item{mean_results}{List of mean stability metrics across all subsamples.}
+#' \item{full_results}{List of (unaggregated) stability metrics across all subsamples.}
+#'
+#' @examples
+#' estimator <- function(X, y, Z) {
+#'   return(rnorm(n = nrow(X)))
+#' }
+#' n <- 100
+#' X <- matrix(rnorm(n), nrow = n, ncol = 10)
+#' y <- rnorm(n)
+#' Z <- rbinom(n, 1, 0.5)
+#' out <- evaluate_stability(estimator, X, y, Z)
+#'
+#' @export
+evaluate_stability <- function(estimator, X, y, Z = NULL,
+                               n_strata = seq(2, 10, by = 1),
+                               metrics = c("jaccard", "ARI", "spearman"),
+                               subsample = 0.8, B = 100) {
+  metrics <- match.arg(metrics, several.ok = TRUE)
+
+  tauhats <- purrr::map(
+    1:(2 * B),
+    function(b) {
+      sample_idx <- sample(1:nrow(X), size = floor(subsample * nrow(X)))
+      # sample_idx <- sample(1:nrow(X), size = nrow(X), replace = TRUE)
+      X_b <- X[sample_idx, , drop = FALSE]
+      y_b <- y[sample_idx]
+      if (is.null(Z)) {
+        tauhat_b <- estimator(X = X_b, y = y_b)
+      } else {
+        Z_b <- Z[sample_idx]
+        tauhat_b <- estimator(X = X_b, y = y_b, Z = Z_b)
+      }
+      tauhat <- rep(NA, nrow(X))
+      tauhat[sample_idx] <- tauhat_b
+      return(tauhat)
+    }
+  )
+
+  out <- list()
+  for (metric in metrics) {
+    if (metric == "spearman") {
+      out[[metric]] <- purrr::map_dbl(
+        1:B,
+        ~ cor(
+          tauhats[[.x * 2 - 1]],
+          tauhats[[.x * 2]],
+          method = "spearman",
+          use = "pairwise.complete.obs"
+        )
+      )
+    } else {
+      metric_out <- list()
+      for (q in n_strata) {
+        metric_out[[as.character(q)]] <- purrr::map_dbl(
+          1:B,
+          function(i) {
+            x <- tauhats[[i * 2 - 1]]
+            y <- tauhats[[i * 2]]
+            keep_samples <- !is.na(x) & !is.na(y)
+            x <- factor(cut(x[keep_samples], breaks = q))
+            y <- factor(cut(y[keep_samples], breaks = q))
+            if (metric == "jaccard") {
+              jaccardSSI(as.numeric(x) - 1, as.numeric(y) - 1)
+            } else if (metric == "ARI") {
+              mclust::adjustedRandIndex(as.numeric(x), as.numeric(y))
+            }
+          }
+        )
+      }
+      out[[metric]] <- metric_out
+    }
+  }
+
+  mean_out <- purrr::imap(
+    out,
+    function(x, metric_name) {
+      if (metric_name == "spearman") {
+        mean(x)
+      } else {
+        purrr::map_dbl(x, mean)
+      }
+    }
+  )
+
+  return(
+    list(
+      "mean_results" = mean_out,
+      "full_results" = out
+    )
+  )
+}
+
+
 

@@ -45,3 +45,17 @@ test_that("jaccard stability works", {
   y <- sample(1:G, size = n, replace = TRUE) - 1
   expect_equal(jaccardSSI(x, y), true_jaccard(x, y))
 })
+
+
+test_that("evaluate_stability works", {
+  estimator <- function(X, ...) {
+    return(rnorm(n = nrow(X)))
+  }
+  B <- 10
+  subsample <- 0.8
+  n <- 100
+  X <- matrix(rnorm(n), nrow = n, ncol = 10)
+  y <- rnorm(n)
+  Z <- rbinom(n, 1, 0.5)
+  out <- evaluate_stability(estimator, X, y, Z)
+})
