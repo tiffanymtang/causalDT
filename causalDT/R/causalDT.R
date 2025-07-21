@@ -6,6 +6,7 @@
 #' @param Y A vector of outcomes.
 #' @param y A vector of responses to predict.
 #' @param Z A vector of treatments.
+#' @param W A vector of weights corresponding to treatment propensities.
 #' @param rpart_control A list of control parameters for the `rpart` algorithm.
 #'   See `? rpart.control` for details.
 #' @param rpart_fit An `rpart` object.
@@ -44,8 +45,9 @@ NULL
 #'   If "causal_forest", \code{grf::causal_forest()} is used as the teacher
 #'   model. If "bcf", \code{bcf::bcf()} is used as the teacher model.
 #'   Otherwise, the function should take in the named arguments
-#'   `X`, `Y`, `Z`, (corresponding to the covariates, outcome, and treatment
-#'   data, respectively) as well as (optional) additional arguments passed to
+#'   `X`, `Y`, `Z`, optionally `W` (corresponding to the covariates,
+#'   outcome, treatment, and propensity weights,
+#'   respectively), and (optional) additional arguments passed to
 #'   the function via `...`. Moreover, the function should return a model object
 #'   that can be used to predict individual-level treatment effects using
 #'   `teacher_predict(teacher_model, x)`.
@@ -137,7 +139,7 @@ NULL
 #' }
 #'
 #' @export
-causalDT <- function(X, Y, Z,
+causalDT <- function(X, Y, Z, W = NULL,
                      holdout_prop = 0.3,
                      holdout_idxs = NULL,
                      teacher_model = "causal_forest",
@@ -159,6 +161,11 @@ causalDT <- function(X, Y, Z,
   # check input dimensions
   if (n != length(Y) || n != length(Z)) {
     stop("Input dimensions do not match. X, Y, and Z must have the same number of rows.")
+  }
+  if (!is.null(W)) {
+    if (n != length(W)) {
+      stop("Input dimensions do not match. X and W must have the same number of rows.")
+    }
   }
 
   # check input types
@@ -219,6 +226,7 @@ causalDT <- function(X, Y, Z,
     X_train <- X
     Y_train <- Y
     Z_train <- Z
+    W_train <- W
     X_est <- X
     Y_est <- Y
     Z_est <- Z
@@ -229,6 +237,7 @@ causalDT <- function(X, Y, Z,
     X_train <- X[-holdout_idxs, , drop = FALSE]
     Y_train <- Y[-holdout_idxs]
     Z_train <- Z[-holdout_idxs]
+    W_train <- W[-holdout_idxs]
     X_est <- X[holdout_idxs, , drop = FALSE]
     Y_est <- Y[holdout_idxs]
     Z_est <- Z[holdout_idxs]
@@ -247,6 +256,7 @@ causalDT <- function(X, Y, Z,
       X = X_train,
       Y = Y_train,
       Z = Z_train,
+      W = W_train,
       split_idxs = split_idxs,
       ...
     )

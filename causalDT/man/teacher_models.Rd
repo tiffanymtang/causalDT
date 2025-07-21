@@ -11,20 +11,21 @@
 \alias{predict_bcf}
 \title{Teacher models for causal distillation trees}
 \usage{
-causal_forest(X, Y, Z, ...)
+causal_forest(X, Y, Z, W = NULL, ...)
 
 predict_causal_forest(...)
 
-rboost(X, Y, Z, ...)
+rboost(X, Y, Z, W = NULL, ...)
 
-rlasso(X, Y, Z, ...)
+rlasso(X, Y, Z, W = NULL, ...)
 
-rkern(X, Y, Z, ...)
+rkern(X, Y, Z, W = NULL, ...)
 
 bcf(
   X,
   Y,
   Z,
+  W = NULL,
   pihat = "default",
   w = NULL,
   nburn = 2000,
@@ -41,6 +42,8 @@ predict_bcf(...)
 \item{Y}{A vector of outcomes.}
 
 \item{Z}{A vector of treatments.}
+
+\item{W}{A vector of weights corresponding to treatment propensities.}
 
 \item{...}{Additional arguments to pass to the base model functions.}
 

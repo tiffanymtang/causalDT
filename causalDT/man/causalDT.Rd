@@ -8,6 +8,7 @@ causalDT(
   X,
   Y,
   Z,
+  W = NULL,
   holdout_prop = 0.3,
   holdout_idxs = NULL,
   teacher_model = "causal_forest",
@@ -29,6 +30,8 @@ causalDT(
 
 \item{Z}{A vector of treatments.}
 
+\item{W}{A vector of weights corresponding to treatment propensities.}
+
 \item{holdout_prop}{Proportion of data to hold out for honest estimation of
 treatment effects. Used only if \code{holdout_idxs} is NULL.}
 
@@ -42,8 +45,9 @@ treatment events. Should be either "causal_forest" (default),
 If "causal_forest", \code{grf::causal_forest()} is used as the teacher
 model. If "bcf", \code{bcf::bcf()} is used as the teacher model.
 Otherwise, the function should take in the named arguments
-\code{X}, \code{Y}, \code{Z}, (corresponding to the covariates, outcome, and treatment
-data, respectively) as well as (optional) additional arguments passed to
+\code{X}, \code{Y}, \code{Z}, optionally \code{W} (corresponding to the covariates,
+outcome, treatment, and propensity weights,
+respectively), and (optional) additional arguments passed to
 the function via \code{...}. Moreover, the function should return a model object
 that can be used to predict individual-level treatment effects using
 \code{teacher_predict(teacher_model, x)}.}
