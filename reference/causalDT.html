@@ -41,6 +41,7 @@
 <span>  <span class="va">X</span>,</span>
 <span>  <span class="va">Y</span>,</span>
 <span>  <span class="va">Z</span>,</span>
+<span>  W <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  holdout_prop <span class="op">=</span> <span class="fl">0.3</span>,</span>
 <span>  holdout_idxs <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  teacher_model <span class="op">=</span> <span class="st">"causal_forest"</span>,</span>
@@ -72,6 +73,10 @@
 <dd><p>A vector of treatments.</p></dd>
 
 
+<dt id="arg-w">W<a class="anchor" aria-label="anchor" href="#arg-w"></a></dt>
+<dd><p>A vector of weights corresponding to treatment propensities.</p></dd>
+
+
 <dt id="arg-holdout-prop">holdout_prop<a class="anchor" aria-label="anchor" href="#arg-holdout-prop"></a></dt>
 <dd><p>Proportion of data to hold out for honest estimation of
 treatment effects. Used only if <code>holdout_idxs</code> is NULL.</p></dd>
@@ -90,8 +95,9 @@ treatment events. Should be either "causal_forest" (default),
 If "causal_forest", <code><a href="https://rdrr.io/pkg/grf/man/causal_forest.html" class="external-link">grf::causal_forest()</a></code> is used as the teacher
 model. If "bcf", <code><a href="https://rdrr.io/pkg/bcf/man/bcf.html" class="external-link">bcf::bcf()</a></code> is used as the teacher model.
 Otherwise, the function should take in the named arguments
-<code>X</code>, <code>Y</code>, <code>Z</code>, (corresponding to the covariates, outcome, and treatment
-data, respectively) as well as (optional) additional arguments passed to
+<code>X</code>, <code>Y</code>, <code>Z</code>, optionally <code>W</code> (corresponding to the covariates,
+outcome, treatment, and propensity weights,
+respectively), and (optional) additional arguments passed to
 the function via <code>...</code>. Moreover, the function should return a model object
 that can be used to predict individual-level treatment effects using
 <code>teacher_predict(teacher_model, x)</code>.</p></dd>
@@ -239,7 +245,7 @@ max(4, max depth of fitted student model).</p></dd>
 </div>
 
 <div class="pkgdown-footer-right">
-  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.1.</p>
+  <p>Site built with <a href="https://pkgdown.r-lib.org/" class="external-link">pkgdown</a> 2.1.3.</p>
 </div>
 
     </footer></div>
