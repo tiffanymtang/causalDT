@@ -40,8 +40,8 @@ between treated and control units that fall within each subgroup (i.e.,
 each leaf node in the decision tree).
 }
 \examples{
-n <- 100
-p <- 5
+n <- 50
+p <- 3
 X <- matrix(rnorm(n * p), nrow = n, ncol = p)
 Z <- rbinom(n, 1, 0.5)
 Y <- 2 * Z * (X[, 1] > 0) + X[, 2] + rnorm(n, 0.1)

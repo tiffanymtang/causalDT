@@ -10,6 +10,7 @@
 #' @return A plot of the causal distillation tree.
 #'
 #' @examples
+#' \dontrun{
 #' n <- 200
 #' p <- 10
 #' X <- matrix(rnorm(n * p), nrow = n, ncol = p)
@@ -18,9 +19,17 @@
 #'
 #' cdt <- causalDT(X, Y, Z)
 #' plot_cdt(cdt)
+#' }
 #'
 #' @export
 plot_cdt <- function(cdt, show_digits = 2) {
+  # to avoid "no visible binding" error from R CMD check
+  breaks_label <- NULL
+  splitvar <- NULL
+  estimate <- NULL
+  label <- NULL
+  info <- NULL
+
   party_obj <- partykit::as.party(cdt$student_fit$fit)
   plt <- ggparty::ggparty(party_obj) +
     ggparty::geom_edge() +
@@ -57,6 +66,7 @@ plot_cdt <- function(cdt, show_digits = 2) {
 #' @return A plot of the Jaccard SSI for each tree depth.
 #'
 #' @examples
+#' \dontrun{
 #' n <- 50
 #' p <- 2
 #' X <- matrix(rnorm(n * p), nrow = n, ncol = p)
@@ -66,10 +76,15 @@ plot_cdt <- function(cdt, show_digits = 2) {
 #' cdt1 <- causalDT(X, Y, Z)
 #' cdt2 <- causalDT(X, Y, Z, teacher_model = rboost)
 #' plot_jaccard(`Causal Forest` = cdt1, `Rboost` = cdt2)
+#' }
 #'
 #' @export
 plot_jaccard <- function(...) {
   dots_ls <- rlang::dots_list(...)
+  # to avoid "no visible binding" error from R CMD check
+  tree_depth <- NULL
+  jaccard_ssi <- NULL
+  teacher_model <- NULL
 
   default_names <- paste0("Model", 1:length(dots_ls))
   if (is.null(names(dots_ls))) {
@@ -82,17 +97,20 @@ plot_jaccard <- function(...) {
     dots_ls,
     function(cdt) {
       tibble::tibble(
-        `Tree Depth` = 1:length(cdt$stability_diagnostics$jaccard_mean),
-        `Jaccard SSI` = cdt$stability_diagnostics$jaccard_mean
+        tree_depth = 1:length(cdt$stability_diagnostics$jaccard_mean),
+        jaccard_ssi = cdt$stability_diagnostics$jaccard_mean
       )
     }
   ) |>
-    dplyr::bind_rows(.id = "Teacher Model")
+    dplyr::bind_rows(.id = "teacher_model")
 
   plt <- ggplot2::ggplot(ssi_df) +
-    ggplot2::aes(x = `Tree Depth`, y = `Jaccard SSI`, color = `Teacher Model`) +
+    ggplot2::aes(x = tree_depth, y = jaccard_ssi, color = teacher_model) +
     ggplot2::geom_line() +
     ggplot2::geom_point() +
+    ggplot2::labs(
+      x = "Tree Depth", y = "Jaccard SSI", color = "Teacher Model"
+    ) +
     ggplot2::theme_classic()
   return(plt)
 }

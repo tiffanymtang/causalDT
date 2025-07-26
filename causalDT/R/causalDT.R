@@ -2,6 +2,8 @@
 #'
 #' @name shared_args
 #'
+#' @importFrom stats glm predict var
+#' @importFrom utils capture.output
 #' @param X A tibble, data.frame, or matrix of covariates.
 #' @param Y A vector of outcomes.
 #' @param y A vector of responses to predict.
@@ -29,9 +31,18 @@
 #' @keywords internal
 NULL
 
-#' Causal Distillation Trees
+#' Causal Distillation Trees (CDT)
 #'
-#' @description TODO
+#' @description This function implements causal distillation trees (CDT),
+#'   developed in Huang et al. (2025). Briefly, CDT is a two-stage
+#'   procedure that allows researchers to identify interpretable subgroups with
+#'   heterogeneous treatment effects. In the first stage, researchers are free
+#'   to use any machine learning model or metalearner to predict the
+#'   heterogeneous treatment effects for each individual in the dataset. In the
+#'   second stage, CDT ``distills'' these predicted heterogeneous treatment
+#'   effects into interpretable subgroups by fitting an ordinary decision tree
+#'   using the predicted heterogeneous treatment effects from the first stage
+#'   as the response variable.
 #'
 #' @inheritParams shared_args
 #' @param holdout_prop Proportion of data to hold out for honest estimation of
@@ -77,9 +88,11 @@ NULL
 #'   If `teacher_model` is "causal_forest", the default is 1 (no cross-fitting
 #'   is performed). Otherwise, the default is 50.
 #' @param B_stability Number of bootstrap samples to use in evaluating stability
-#'   diagnostics. Default is 100. Stability diagnostics are only performed if
+#'   diagnostics (which can be used to select an appropriate teacher model).
+#'   Default is 100. Stability diagnostics are only performed if
 #'   `student_model` is an `rpart` object. If `B_stability` is 0, no stability
-#'   diagnostics are performed.
+#'   diagnostics are performed. We refer to Huang et al. (2025) for additional
+#'   details on using the stability diagnostic to select the teacher model.
 #' @param max_depth_stability Maximum depth of the decision tree used in
 #'   evaluating stability diagnostics. If \code{NULL}, the default is
 #'   max(4, max depth of fitted student model).
@@ -123,9 +136,11 @@ NULL
 #' }
 #' \item{holdout_idxs}{Indices of the holdout set.}
 #'
+#' @references Huang, M., Tang, T. M., and Kenney, A. M. (2025). Distilling heterogeneous treatment effects: Stable subgroup estimation in causal inference. *arXiv preprint arXiv:2502.07275*.
+#'
 #' @examples
-#' n <- 100
-#' p <- 5
+#' n <- 50
+#' p <- 3
 #' X <- matrix(rnorm(n * p), nrow = n, ncol = p)
 #' Z <- rbinom(n, 1, 0.5)
 #' Y <- 2 * Z * (X[, 1] > 0) + X[, 2] + rnorm(n, 0.1)

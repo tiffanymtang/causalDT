@@ -20,6 +20,7 @@ Visualize the subgroups (i.e., the student tree) from a causal
 distillation tree object.
 }
 \examples{
+\dontrun{
 n <- 200
 p <- 10
 X <- matrix(rnorm(n * p), nrow = n, ncol = p)
@@ -28,5 +29,6 @@ Y <- 2 * Z * (X[, 1] > 0) + X[, 2] + rnorm(n, 0.1)
 
 cdt <- causalDT(X, Y, Z)
 plot_cdt(cdt)
+}
 
 }

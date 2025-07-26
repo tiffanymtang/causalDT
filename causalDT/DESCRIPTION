@@ -6,7 +6,15 @@ Authors@R: c(
     person("Melody", "Huang", , "melody.huang@yale.edu", role = "aut"),
     person("Ana", "Kenney", , "anamaria.kenney@uci.edu", role = "aut")
   )
-Description: This package provides tools to estimate interpretable subgroups in causal inference using causal distillation trees (CDT).
+Description: Causal Distillation Tree (CDT) is a novel machine learning method 
+    for estimating interpretable subgroups with heterogeneous treatment effects. 
+    CDT allows researchers to fit any machine learning model (or metalearner) to 
+    estimate heterogeneous treatment effects for each individual, and then 
+    "distills" these predicted heterogeneous treatment effects into 
+    interpretable subgroups by fitting an ordinary decision tree to predict the
+    previously-estimated heterogeneous treatment effects. This package 
+    provides tools to estimate causal distillation trees (CDT), as detailed in
+    Huang, Tang, and Kenney (2025) <https://doi.org/10.48550/arXiv.2502.07275>.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

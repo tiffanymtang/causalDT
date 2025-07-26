@@ -30,13 +30,16 @@ get_rpart_paths <- function(rpart_fit) {
 #' Return the split information for each node in an `rpart` model as a data frame.
 #'
 #' @inheritParams shared_args
+#' @param X Optional data frame containing the features used in the `rpart`
+#'   model. Only used if the model contains categorical variables.
 #' @param digits Number of digits to round the split values to.
 #'
 #' @returns A data.frame with information regarding the feature/threshold used
 #'   for each split in the `rpart` model.
 #'
 #' @export
-get_rpart_tree_info <- function(rpart_fit, digits = getOption("digits")) {
+get_rpart_tree_info <- function(rpart_fit, X = NULL,
+                                digits = getOption("digits")) {
   out <- NULL
   splits <- rpart_fit$splits
   if (!is.null(splits) && isTRUE(nrow(splits) > 0)) {
@@ -76,7 +79,7 @@ get_rpart_tree_info <- function(rpart_fit, digits = getOption("digits")) {
       as.data.frame(splits, row.names = F)
     ) |>
       dplyr::filter(type == "main") |>
-      dplyr::rename(thr = index) |>
+      dplyr::rename("thr" = "index") |>
       dplyr::mutate(
         cat_thr = purrr::pmap_chr(
           list(v = var, l = left),
@@ -148,7 +151,7 @@ get_rpart_tree_info <- function(rpart_fit, digits = getOption("digits")) {
     index <- partykit::index_split(split)
     if (is.factor(dat[, svar])) {
       if (is.null(index)) {
-        index <- ((1:nlevels(dat[, svar])) > breaks_split(split)) + 1
+        index <- ((1:nlevels(dat[, svar])) > partykit::breaks_split(split)) + 1
       }
       slevels <- levels(dat[, svar])[index == whichkid]
       srule <- paste(
@@ -195,6 +198,9 @@ get_rpart_tree_info <- function(rpart_fit, digits = getOption("digits")) {
 #'
 #' @keywords internal
 get_party_paths <- function(party_fit) {
+  # to avoid "no visible binding" error from R CMD check
+  leaf_id <- NULL
+
   purrr::map(
     .list.rules.party(party_fit),
     ~ tibble::tibble(

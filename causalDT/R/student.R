@@ -21,6 +21,10 @@
 #' @export
 student_rpart <- function(X, y, method = "anova", rpart_control = NULL,
                           prune = c("none", "min", "1se"), fit_only = FALSE) {
+  # to avoid "no visible binding" error from R CMD check
+  xerror <- NULL
+  nsplit <- NULL
+
   prune <- match.arg(prune)
   df <- data.frame(X, y)
 
@@ -67,7 +71,7 @@ student_rpart <- function(X, y, method = "anova", rpart_control = NULL,
       out <- fit
     } else {
       subgroups <- get_rpart_paths(fit)
-      tree_info <- get_rpart_tree_info(fit)
+      tree_info <- get_rpart_tree_info(fit, X = df)
       predictions <- predict(fit)
       out <- list(
         fit = fit,
@@ -111,8 +115,8 @@ student_rpart <- function(X, y, method = "anova", rpart_control = NULL,
 #' \item{.sample_idxs}{Indices of (holdout) observations in the subgroup.}
 #'
 #' @examples
-#' n <- 100
-#' p <- 5
+#' n <- 50
+#' p <- 3
 #' X <- matrix(rnorm(n * p), nrow = n, ncol = p)
 #' Z <- rbinom(n, 1, 0.5)
 #' Y <- 2 * Z * (X[, 1] > 0) + X[, 2] + rnorm(n, 0.1)

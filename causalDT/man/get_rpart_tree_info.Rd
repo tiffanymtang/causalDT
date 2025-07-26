@@ -4,10 +4,13 @@
 \alias{get_rpart_tree_info}
 \title{Get split information from an rpart model.}
 \usage{
-get_rpart_tree_info(rpart_fit, digits = getOption("digits"))
+get_rpart_tree_info(rpart_fit, X = NULL, digits = getOption("digits"))
 }
 \arguments{
 \item{rpart_fit}{An \code{rpart} object.}
+
+\item{X}{Optional data frame containing the features used in the \code{rpart}
+model. Only used if the model contains categorical variables.}
 
 \item{digits}{Number of digits to round the split values to.}
 }
