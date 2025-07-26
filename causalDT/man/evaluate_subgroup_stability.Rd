@@ -59,6 +59,7 @@ recommended to choose teacher models in CDT that result in the most stable
 subgroups, as indicated by high SSI values.
 }
 \examples{
+\dontrun{
 n <- 200
 p <- 10
 X <- matrix(rnorm(n * p), nrow = n, ncol = p)
@@ -74,6 +75,7 @@ stability_out <- evaluate_subgroup_stability(
   X = X[-out$holdout_idxs, , drop = FALSE],
   y = out$student_fit$predictions
 )
+}
 
 }
 \references{

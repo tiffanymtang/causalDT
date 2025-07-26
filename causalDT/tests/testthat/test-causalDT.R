@@ -6,10 +6,10 @@ test_that("causalDT works", {
   Y <- rnorm(n)
   Z <- rbinom(n, 1, 0.5)
   teacher_models <- list(
-    "causal_forest",
+    "causal_forest"
     # "bcf",
     # rboost,
-    rlasso
+    # rlasso
   )
   expected_names <- c(
     "estimate", "student_fit",
@@ -39,7 +39,8 @@ test_that("causalDT works", {
   # test with custom cross-fitting parameters
   out <- causalDT(
     X = X, Y = Y, Z = Z, W = W,
-    teacher_model = rlasso,
+    teacher_model = "causal_forest",
+    # teacher_model = rlasso,
     nfolds_crossfit = 2,
     nreps_crossfit = 10
   )

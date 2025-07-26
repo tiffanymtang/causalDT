@@ -104,6 +104,9 @@ higher Jaccard SSI indicates a better teacher model. This teacher model
 selection procedure can be run as follows:
 
 ``` r
+## uncomment to install rlearner, which is needed to run rboost
+# remotes::install_github("xnie/rlearner")
+
 # selecting between causal forest versus rboost
 rboost_cdt <- causalDT(
   X = as.matrix(X), Y = Y, Z = Z,

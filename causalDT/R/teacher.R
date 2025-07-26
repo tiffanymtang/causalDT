@@ -37,25 +37,46 @@ predict_causal_forest <- function(...) {
 #' @rdname teacher_models
 #' @export
 rboost <- function(X, Y, Z, W = NULL, ...) {
-  rlearner::rboost(
-    x = X, y = Y, w = Z, p_hat = W, ...
-  )
+  if (rlang::is_installed("rlearner")) {
+    rlearner::rboost(
+      x = X, y = Y, w = Z, p_hat = W, ...
+    )
+  } else {
+    stop(
+      "The 'rlearner' package is required for rboost.\n",
+      "Please install it using `remotes::install_github('xnie/rlearner')`."
+    )
+  }
 }
 
 #' @rdname teacher_models
 #' @export
 rlasso <- function(X, Y, Z, W = NULL, ...) {
-  rlearner::rlasso(
-    x = X, y = Y, w = Z, p_hat = W, ...
-  )
+  if (rlang::is_installed("rlearner")) {
+    rlearner::rlasso(
+      x = X, y = Y, w = Z, p_hat = W, ...
+    )
+  } else {
+    stop(
+      "The 'rlearner' package is required for rlasso.\n",
+      "Please install it using `remotes::install_github('xnie/rlearner')`."
+    )
+  }
 }
 
 #' @rdname teacher_models
 #' @export
 rkern <- function(X, Y, Z, W = NULL, ...) {
-  rlearner::rkern(
-    x = X, y = Y, w = Z, p_hat = W, ...
-  )
+  if (rlang::is_installed("rlearner")) {
+    rlearner::rkern(
+      x = X, y = Y, w = Z, p_hat = W, ...
+    )
+  } else {
+    stop(
+      "The 'rlearner' package is required for rkern.\n",
+      "Please install it using `remotes::install_github('xnie/rlearner')`."
+    )
+  }
 }
 
 #' @rdname teacher_models

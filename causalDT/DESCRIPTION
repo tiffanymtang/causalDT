@@ -14,13 +14,14 @@ Description: Causal Distillation Tree (CDT) is a novel machine learning method
     interpretable subgroups by fitting an ordinary decision tree to predict the
     previously-estimated heterogeneous treatment effects. This package 
     provides tools to estimate causal distillation trees (CDT), as detailed in
-    Huang, Tang, and Kenney (2025) <https://doi.org/10.48550/arXiv.2502.07275>.
+    Huang, Tang, and Kenney (2025) <doi:10.48550/arXiv.2502.07275>.
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Suggests: 
-    testthat (>= 3.0.0)
+    testthat (>= 3.0.0),
+    rlearner
 Config/testthat/edition: 3
 LinkingTo: 
     Rcpp,
@@ -36,11 +37,8 @@ Imports:
     R.utils,
     Rcpp,
     rlang,
-    rlearner (>= 1.1.0),
     rpart,
     stringr,
     tibble,
     tidyselect
-Remotes: 
-    xnie/rlearner
 URL: https://tiffanymtang.github.io/causalDT/

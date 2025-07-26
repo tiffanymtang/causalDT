@@ -115,6 +115,7 @@ student_rpart <- function(X, y, method = "anova", rpart_control = NULL,
 #' \item{.sample_idxs}{Indices of (holdout) observations in the subgroup.}
 #'
 #' @examples
+#' \dontrun{
 #' n <- 50
 #' p <- 3
 #' X <- matrix(rnorm(n * p), nrow = n, ncol = p)
@@ -131,6 +132,7 @@ student_rpart <- function(X, y, method = "anova", rpart_control = NULL,
 #'   Z = Z[out$holdout_idxs]
 #' )
 #' all.equal(out$estimate, group_cates)
+#' }
 #'
 #' @export
 estimate_group_cates <- function(fit, X, Y, Z) {

@@ -40,6 +40,7 @@ between treated and control units that fall within each subgroup (i.e.,
 each leaf node in the decision tree).
 }
 \examples{
+\dontrun{
 n <- 50
 p <- 3
 X <- matrix(rnorm(n * p), nrow = n, ncol = p)
@@ -56,5 +57,6 @@ group_cates <- estimate_group_cates(
   Z = Z[out$holdout_idxs]
 )
 all.equal(out$estimate, group_cates)
+}
 
 }
