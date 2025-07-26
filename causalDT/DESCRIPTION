@@ -41,4 +41,6 @@ Imports:
     stringr,
     tibble,
     tidyselect
+Remotes: 
+    xnie/rlearner
 URL: https://tiffanymtang.github.io/causalDT/
