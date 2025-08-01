@@ -167,8 +167,12 @@ out <- causalDT(X, Y, Z)
 }
 
 \dontrun{
+# install and load rlearner package to use rboost, rlasso, and rkern
+# remotes::install_github("xnie/rlearner")
+# library(rlearner)
+
 # causal distillation trees using rboost teacher model
-out <- causalDT(X, Y, Z, teacher_model = rboost)
+out <- causalDT(X, Y, Z, teacher_model = rlearner_teacher(rlearner::rboost))
 }
 
 }

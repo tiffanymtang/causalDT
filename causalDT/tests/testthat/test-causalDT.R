@@ -8,8 +8,8 @@ test_that("causalDT works", {
   teacher_models <- list(
     "causal_forest"
     # "bcf",
-    # rboost,
-    # rlasso
+    # rlearner_teacher(rlearner::rboost),
+    # rlearner_teacher(rlearner::rlasso)
   )
   expected_names <- c(
     "estimate", "student_fit",
@@ -40,7 +40,7 @@ test_that("causalDT works", {
   out <- causalDT(
     X = X, Y = Y, Z = Z, W = W,
     teacher_model = "causal_forest",
-    # teacher_model = rlasso,
+    # teacher_model = rlearner_teacher(rlearner::rlasso),
     nfolds_crossfit = 2,
     nreps_crossfit = 10
   )

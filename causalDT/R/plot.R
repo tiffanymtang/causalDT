@@ -67,6 +67,9 @@ plot_cdt <- function(cdt, show_digits = 2) {
 #'
 #' @examples
 #' \dontrun{
+#' # uncomment the following line to install rlearner package to use rboost
+#' # remotes::install_github("xnie/rlearner")
+#'
 #' n <- 50
 #' p <- 2
 #' X <- matrix(rnorm(n * p), nrow = n, ncol = p)
@@ -74,7 +77,7 @@ plot_cdt <- function(cdt, show_digits = 2) {
 #' Y <- 2 * Z * (X[, 1] > 0) + X[, 2] + rnorm(n, 0.1)
 #'
 #' cdt1 <- causalDT(X, Y, Z)
-#' cdt2 <- causalDT(X, Y, Z, teacher_model = rboost)
+#' cdt2 <- causalDT(X, Y, Z, teacher_model = rlearner_teacher(rlearner::rboost))
 #' plot_jaccard(`Causal Forest` = cdt1, `Rboost` = cdt2)
 #' }
 #'

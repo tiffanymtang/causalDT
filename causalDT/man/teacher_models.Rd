@@ -4,6 +4,7 @@
 \alias{teacher_models}
 \alias{causal_forest}
 \alias{predict_causal_forest}
+\alias{rlearner_teacher}
 \alias{rboost}
 \alias{rlasso}
 \alias{rkern}
@@ -14,6 +15,8 @@
 causal_forest(X, Y, Z, W = NULL, ...)
 
 predict_causal_forest(...)
+
+rlearner_teacher(rlearner_fun, ...)
 
 rboost(X, Y, Z, W = NULL, ...)
 
@@ -47,6 +50,10 @@ predict_bcf(...)
 
 \item{...}{Additional arguments to pass to the base model functions.}
 
+\item{rlearner_fun}{One of \code{rlearner::rboost},
+\code{rlearner::rlasso}, or \code{rlearner::rkern} to be transformed to
+teacher model format for CDT.}
+
 \item{pihat}{Length n estimates of propensity score}
 
 \item{w}{An optional vector of weights. When present, BCF fits a model \eqn{y | x ~ N(f(x), \sigma^2 / w)}, where \eqn{f(x)} is the unknown function.}
@@ -65,9 +72,20 @@ teacher models in the causal distillation tree framework.
 \item \code{causal_forest()}: wrapper around \code{grf::causal_forest()}
 \item \code{predict_causal_forest()}: wrapper around \code{predict()} for
 \code{causal_forest()} models.
-\item \code{rboost()}: wrapper around \code{rlearner::rboost()}
-\item \code{rlasso()}: wrapper around \code{rlearner::rlasso()}
-\item \code{rkern()}: wrapper around \code{rlearner::rkern()}
+\item \code{bcf()}: wrapper around \code{bcf::bcf()}
+\item \code{predict_bcf()}: wrapper around \code{predict()} for
+\code{bcf()} models.
+\item \code{rlearner_teacher()}: wrapper around model functions from the
+\code{rlearner} package to convert them to teacher models for CDT.
+\item \code{rboost()}: (defunct) wrapper around \code{rlearner::rboost()}.
+\item \code{rlasso()}: (defunct) wrapper around \code{rlearner::rlasso()}.
+\item \code{rkern()}: (defunct) wrapper around \code{rlearner::rkern()}.
 }
+
+Warning: The \code{rboost()}, \code{rlasso()}, and \code{rkern()} functions
+are defunct as of version 1.0.0. Use \code{rlearner_teacher()} (e.g.,
+\code{rlearner_teacher(rlearner::rboost)}) instead to convert
+\code{rlearner} functions into correct format for use as teacher model in
+CDT.
 }
 \keyword{internal}

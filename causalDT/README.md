@@ -110,7 +110,7 @@ selection procedure can be run as follows:
 # selecting between causal forest versus rboost
 rboost_cdt <- causalDT(
   X = as.matrix(X), Y = Y, Z = Z,
-  teacher_model = rboost
+  teacher_model = rlearner_teacher(rlearner::rboost)
 )
 plot_jaccard(`Causal Forest` = causal_forest_cdt, `Rboost` = rboost_cdt)
 ```

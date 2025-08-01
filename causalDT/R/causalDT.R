@@ -151,8 +151,11 @@ NULL
 #' }
 #'
 #' \dontrun{
+#' # uncomment the following line to install rlearner package to use rboost
+#' # remotes::install_github("xnie/rlearner")
+#'
 #' # causal distillation trees using rboost teacher model
-#' out <- causalDT(X, Y, Z, teacher_model = rboost)
+#' out <- causalDT(X, Y, Z, teacher_model = rlearner_teacher(rlearner::rboost))
 #' }
 #'
 #' @export

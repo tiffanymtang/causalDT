@@ -9,12 +9,26 @@
 #' - \code{causal_forest()}: wrapper around \code{grf::causal_forest()}
 #' - \code{predict_causal_forest()}: wrapper around \code{predict()} for
 #'     \code{causal_forest()} models.
-#' - \code{rboost()}: wrapper around \code{rlearner::rboost()}
-#' - \code{rlasso()}: wrapper around \code{rlearner::rlasso()}
-#' - \code{rkern()}: wrapper around \code{rlearner::rkern()}
+#' - \code{bcf()}: wrapper around \code{bcf::bcf()}
+#' - \code{predict_bcf()}: wrapper around \code{predict()} for
+#'     \code{bcf()} models.
+#' - \code{rlearner_teacher()}: wrapper around model functions from the
+#'     \code{rlearner} package to convert them to teacher models for CDT.
+#' - \code{rboost()}: (defunct) wrapper around \code{rlearner::rboost()}.
+#' - \code{rlasso()}: (defunct) wrapper around \code{rlearner::rlasso()}.
+#' - \code{rkern()}: (defunct) wrapper around \code{rlearner::rkern()}.
+#'
+#' Warning: The \code{rboost()}, \code{rlasso()}, and \code{rkern()} functions
+#'   are defunct as of version 1.0.0. Use \code{rlearner_teacher()} (e.g.,
+#'   \code{rlearner_teacher(rlearner::rboost)}) instead to convert
+#'   \code{rlearner} functions into correct format for use as teacher model in
+#'   CDT.
 #'
 #' @inheritParams bcf::bcf
 #' @inheritParams shared_args
+#' @param rlearner_fun One of \code{rlearner::rboost},
+#'   \code{rlearner::rlasso}, or \code{rlearner::rkern} to be transformed to
+#'   teacher model format for CDT.
 #' @param ... Additional arguments to pass to the base model functions.
 #'
 #' @keywords internal
@@ -36,47 +50,43 @@ predict_causal_forest <- function(...) {
 
 #' @rdname teacher_models
 #' @export
-rboost <- function(X, Y, Z, W = NULL, ...) {
-  if (rlang::is_installed("rlearner")) {
-    rlearner::rboost(
+rlearner_teacher <- function(rlearner_fun, ...) {
+  teacher_fun <- function(X, Y, Z, W = NULL, ...) {
+    rlearner_fun(
       x = X, y = Y, w = Z, p_hat = W, ...
     )
-  } else {
-    stop(
-      "The 'rlearner' package is required for rboost.\n",
-      "Please install it using `remotes::install_github('xnie/rlearner')`."
-    )
   }
+  return(teacher_fun)
+}
+
+#' @rdname teacher_models
+#' @export
+rboost <- function(X, Y, Z, W = NULL, ...) {
+  lifecycle::deprecate_stop(
+    when = "1.0.0",
+    what = "rboost()",
+    details = "Use rlearner_teacher(rlearner::rboost) instead."
+  )
 }
 
 #' @rdname teacher_models
 #' @export
 rlasso <- function(X, Y, Z, W = NULL, ...) {
-  if (rlang::is_installed("rlearner")) {
-    rlearner::rlasso(
-      x = X, y = Y, w = Z, p_hat = W, ...
-    )
-  } else {
-    stop(
-      "The 'rlearner' package is required for rlasso.\n",
-      "Please install it using `remotes::install_github('xnie/rlearner')`."
-    )
-  }
+  lifecycle::deprecate_stop(
+    when = "1.0.0",
+    what = "rlasso()",
+    details = "Use rlearner_teacher(rlearner::rlasso) instead."
+  )
 }
 
 #' @rdname teacher_models
 #' @export
 rkern <- function(X, Y, Z, W = NULL, ...) {
-  if (rlang::is_installed("rlearner")) {
-    rlearner::rkern(
-      x = X, y = Y, w = Z, p_hat = W, ...
-    )
-  } else {
-    stop(
-      "The 'rlearner' package is required for rkern.\n",
-      "Please install it using `remotes::install_github('xnie/rlearner')`."
-    )
-  }
+  lifecycle::deprecate_stop(
+    when = "1.0.0",
+    what = "rkern()",
+    details = "Use rlearner_teacher(rlearner::rkern) instead."
+  )
 }
 
 #' @rdname teacher_models
