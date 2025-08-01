@@ -5,21 +5,41 @@ teacher models in the causal distillation tree framework.
 causal_forest(): wrapper around grf::causal_forest()
 predict_causal_forest(): wrapper around predict() for
 causal_forest() models.
-rboost(): wrapper around rlearner::rboost()
-rlasso(): wrapper around rlearner::rlasso()
-rkern(): wrapper around rlearner::rkern()
+bcf(): wrapper around bcf::bcf()
+predict_bcf(): wrapper around predict() for
+bcf() models.
+rlearner_teacher(): wrapper around model functions from the
+rlearner package to convert them to teacher models for CDT.
+rboost(): (defunct) wrapper around rlearner::rboost().
+rlasso(): (defunct) wrapper around rlearner::rlasso().
+rkern(): (defunct) wrapper around rlearner::rkern().
 
-"><meta property="og:description" content="These functions are wrappers around various heterogeneous treatment effect
+
+Warning: The rboost(), rlasso(), and rkern() functions
+are defunct as of version 1.0.0. Use rlearner_teacher() (e.g.,
+rlearner_teacher(rlearner::rboost)) instead to convert
+rlearner functions into correct format for use as teacher model in
+CDT."><meta property="og:description" content="These functions are wrappers around various heterogeneous treatment effect
 learners (and their associated predict methods) that can be easily used as
 teacher models in the causal distillation tree framework.
 causal_forest(): wrapper around grf::causal_forest()
 predict_causal_forest(): wrapper around predict() for
 causal_forest() models.
-rboost(): wrapper around rlearner::rboost()
-rlasso(): wrapper around rlearner::rlasso()
-rkern(): wrapper around rlearner::rkern()
+bcf(): wrapper around bcf::bcf()
+predict_bcf(): wrapper around predict() for
+bcf() models.
+rlearner_teacher(): wrapper around model functions from the
+rlearner package to convert them to teacher models for CDT.
+rboost(): (defunct) wrapper around rlearner::rboost().
+rlasso(): (defunct) wrapper around rlearner::rlasso().
+rkern(): (defunct) wrapper around rlearner::rkern().
 
-"></head><body>
+
+Warning: The rboost(), rlasso(), and rkern() functions
+are defunct as of version 1.0.0. Use rlearner_teacher() (e.g.,
+rlearner_teacher(rlearner::rboost)) instead to convert
+rlearner functions into correct format for use as teacher model in
+CDT."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -57,16 +77,28 @@ learners (and their associated <code>predict</code> methods) that can be easily 
 teacher models in the causal distillation tree framework.</p><ul><li><p><code>causal_forest()</code>: wrapper around <code><a href="https://rdrr.io/pkg/grf/man/causal_forest.html" class="external-link">grf::causal_forest()</a></code></p></li>
 <li><p><code>predict_causal_forest()</code>: wrapper around <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> for
 <code>causal_forest()</code> models.</p></li>
-<li><p><code>rboost()</code>: wrapper around <code><a href="https://rdrr.io/pkg/rlearner/man/rboost.html" class="external-link">rlearner::rboost()</a></code></p></li>
-<li><p><code>rlasso()</code>: wrapper around <code><a href="https://rdrr.io/pkg/rlearner/man/rlasso.html" class="external-link">rlearner::rlasso()</a></code></p></li>
-<li><p><code>rkern()</code>: wrapper around <code><a href="https://rdrr.io/pkg/rlearner/man/rkern.html" class="external-link">rlearner::rkern()</a></code></p></li>
-</ul></div>
+<li><p><code>bcf()</code>: wrapper around <code><a href="https://rdrr.io/pkg/bcf/man/bcf.html" class="external-link">bcf::bcf()</a></code></p></li>
+<li><p><code>predict_bcf()</code>: wrapper around <code><a href="https://rdrr.io/r/stats/predict.html" class="external-link">predict()</a></code> for
+<code>bcf()</code> models.</p></li>
+<li><p><code>rlearner_teacher()</code>: wrapper around model functions from the
+<code>rlearner</code> package to convert them to teacher models for CDT.</p></li>
+<li><p><code>rboost()</code>: (defunct) wrapper around <code><a href="https://rdrr.io/pkg/rlearner/man/rboost.html" class="external-link">rlearner::rboost()</a></code>.</p></li>
+<li><p><code>rlasso()</code>: (defunct) wrapper around <code><a href="https://rdrr.io/pkg/rlearner/man/rlasso.html" class="external-link">rlearner::rlasso()</a></code>.</p></li>
+<li><p><code>rkern()</code>: (defunct) wrapper around <code><a href="https://rdrr.io/pkg/rlearner/man/rkern.html" class="external-link">rlearner::rkern()</a></code>.</p></li>
+</ul><p>Warning: The <code>rboost()</code>, <code>rlasso()</code>, and <code>rkern()</code> functions
+are defunct as of version 1.0.0. Use <code>rlearner_teacher()</code> (e.g.,
+<code>rlearner_teacher(rlearner::rboost)</code>) instead to convert
+<code>rlearner</code> functions into correct format for use as teacher model in
+CDT.</p>
+    </div>
 
     <div class="section level2">
     <h2 id="ref-usage">Usage<a class="anchor" aria-label="anchor" href="#ref-usage"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span><span class="fu">causal_forest</span><span class="op">(</span><span class="va">X</span>, <span class="va">Y</span>, <span class="va">Z</span>, W <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">predict_causal_forest</span><span class="op">(</span><span class="va">...</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">rlearner_teacher</span><span class="op">(</span><span class="va">rlearner_fun</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">rboost</span><span class="op">(</span><span class="va">X</span>, <span class="va">Y</span>, <span class="va">Z</span>, W <span class="op">=</span> <span class="cn">NULL</span>, <span class="va">...</span><span class="op">)</span></span>
 <span></span>
@@ -112,6 +144,12 @@ teacher models in the causal distillation tree framework.</p><ul><li><p><code>ca
 
 <dt id="arg--">...<a class="anchor" aria-label="anchor" href="#arg--"></a></dt>
 <dd><p>Additional arguments to pass to the base model functions.</p></dd>
+
+
+<dt id="arg-rlearner-fun">rlearner_fun<a class="anchor" aria-label="anchor" href="#arg-rlearner-fun"></a></dt>
+<dd><p>One of <code><a href="https://rdrr.io/pkg/rlearner/man/rboost.html" class="external-link">rlearner::rboost</a></code>,
+<code><a href="https://rdrr.io/pkg/rlearner/man/rlasso.html" class="external-link">rlearner::rlasso</a></code>, or <code><a href="https://rdrr.io/pkg/rlearner/man/rkern.html" class="external-link">rlearner::rkern</a></code> to be transformed to
+teacher model format for CDT.</p></dd>
 
 
 <dt id="arg-pihat">pihat<a class="anchor" aria-label="anchor" href="#arg-pihat"></a></dt>
