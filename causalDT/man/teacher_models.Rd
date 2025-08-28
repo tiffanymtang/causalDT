@@ -3,20 +3,13 @@
 \name{teacher_models}
 \alias{teacher_models}
 \alias{causal_forest}
-\alias{predict_causal_forest}
-\alias{rlearner_teacher}
 \alias{rboost}
 \alias{rlasso}
 \alias{rkern}
 \alias{bcf}
-\alias{predict_bcf}
 \title{Teacher models for causal distillation trees}
 \usage{
 causal_forest(X, Y, Z, W = NULL, ...)
-
-predict_causal_forest(...)
-
-rlearner_teacher(rlearner_fun, ...)
 
 rboost(X, Y, Z, W = NULL, ...)
 
@@ -36,8 +29,6 @@ bcf(
   n_threads = 1,
   ...
 )
-
-predict_bcf(...)
 }
 \arguments{
 \item{X}{A tibble, data.frame, or matrix of covariates.}
@@ -50,10 +41,6 @@ predict_bcf(...)
 
 \item{...}{Additional arguments to pass to the base model functions.}
 
-\item{rlearner_fun}{One of \code{rlearner::rboost},
-\code{rlearner::rlasso}, or \code{rlearner::rkern} to be transformed to
-teacher model format for CDT.}
-
 \item{pihat}{Length n estimates of propensity score}
 
 \item{w}{An optional vector of weights. When present, BCF fits a model \eqn{y | x ~ N(f(x), \sigma^2 / w)}, where \eqn{f(x)} is the unknown function.}
@@ -64,19 +51,22 @@ teacher model format for CDT.}
 
 \item{n_threads}{An optional integer of the number of threads to parallelize within chain bcf operations on}
 }
+\value{
+Outputs of the respective base model functions:
+\itemize{
+\item \code{causal_forest()}: see output of \code{grf::causal_forest()}.
+\item \code{rboost()} (defunct): see output of \code{rlearner::rboost()}.
+\item \code{rlasso()} (defunct): see output of \code{rlearner::rlasso()}.
+\item \code{rkern()} (defunct): see output of \code{rlearner::rkern()}.
+}
+}
 \description{
 These functions are wrappers around various heterogeneous treatment effect
-learners (and their associated \code{predict} methods) that can be easily used as
+learners that can be easily used as
 teacher models in the causal distillation tree framework.
 \itemize{
-\item \code{causal_forest()}: wrapper around \code{grf::causal_forest()}
-\item \code{predict_causal_forest()}: wrapper around \code{predict()} for
-\code{causal_forest()} models.
-\item \code{bcf()}: wrapper around \code{bcf::bcf()}
-\item \code{predict_bcf()}: wrapper around \code{predict()} for
-\code{bcf()} models.
-\item \code{rlearner_teacher()}: wrapper around model functions from the
-\code{rlearner} package to convert them to teacher models for CDT.
+\item \code{causal_forest()}: wrapper around \code{grf::causal_forest()}.
+\item \code{bcf()}: wrapper around \code{bcf::bcf()}.
 \item \code{rboost()}: (defunct) wrapper around \code{rlearner::rboost()}.
 \item \code{rlasso()}: (defunct) wrapper around \code{rlearner::rlasso()}.
 \item \code{rkern()}: (defunct) wrapper around \code{rlearner::rkern()}.

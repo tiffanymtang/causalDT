@@ -4,16 +4,10 @@
 #'
 #' @description
 #' These functions are wrappers around various heterogeneous treatment effect
-#' learners (and their associated `predict` methods) that can be easily used as
+#' learners that can be easily used as
 #' teacher models in the causal distillation tree framework.
-#' - \code{causal_forest()}: wrapper around \code{grf::causal_forest()}
-#' - \code{predict_causal_forest()}: wrapper around \code{predict()} for
-#'     \code{causal_forest()} models.
-#' - \code{bcf()}: wrapper around \code{bcf::bcf()}
-#' - \code{predict_bcf()}: wrapper around \code{predict()} for
-#'     \code{bcf()} models.
-#' - \code{rlearner_teacher()}: wrapper around model functions from the
-#'     \code{rlearner} package to convert them to teacher models for CDT.
+#' - \code{causal_forest()}: wrapper around \code{grf::causal_forest()}.
+#' - \code{bcf()}: wrapper around \code{bcf::bcf()}.
 #' - \code{rboost()}: (defunct) wrapper around \code{rlearner::rboost()}.
 #' - \code{rlasso()}: (defunct) wrapper around \code{rlearner::rlasso()}.
 #' - \code{rkern()}: (defunct) wrapper around \code{rlearner::rkern()}.
@@ -26,13 +20,38 @@
 #'
 #' @inheritParams bcf::bcf
 #' @inheritParams shared_args
-#' @param rlearner_fun One of \code{rlearner::rboost},
-#'   \code{rlearner::rlasso}, or \code{rlearner::rkern} to be transformed to
-#'   teacher model format for CDT.
 #' @param ... Additional arguments to pass to the base model functions.
+#'
+#' @returns Outputs of the respective base model functions:
+#' - \code{causal_forest()}: see output of \code{grf::causal_forest()}.
+#' - \code{rboost()} (defunct): see output of \code{rlearner::rboost()}.
+#' - \code{rlasso()} (defunct): see output of \code{rlearner::rlasso()}.
+#' - \code{rkern()} (defunct): see output of \code{rlearner::rkern()}.
 #'
 #' @keywords internal
 NULL
+
+
+#' Predict wrappers for teacher models for causal distillation trees
+#'
+#' @name predict_teacher_models
+#'
+#' @description
+#' These functions are \code{predict()} method wrappers for various heterogeneous
+#' treatment effect learners that can be easily used as
+#' teacher models in the causal distillation tree framework.
+#' - \code{predict_causal_forest()}: wrapper around \code{predict()} for
+#'     \code{causal_forest()} models.
+#' - \code{predict_bcf()}: wrapper around \code{predict()} for
+#'     \code{bcf()} models.
+#'
+#' @param ... Additional arguments to pass to the base model \code{predict} functions.
+#'
+#' @returns Vector of predicted conditional average treatment effects (CATEs).
+#'
+#' @keywords internal
+NULL
+
 
 #' @rdname teacher_models
 #' @export
@@ -42,13 +61,27 @@ causal_forest <- function(X, Y, Z, W = NULL, ...) {
   )
 }
 
-#' @rdname teacher_models
+#' @rdname predict_teacher_models
 #' @export
 predict_causal_forest <- function(...) {
   predict(...)$predictions
 }
 
-#' @rdname teacher_models
+#' Rlearner teacher model wrapper for causal distillation trees
+#'
+#' @description This is a wrapper function to convert any of the \code{rlearner}
+#'   model functions into a format that can be used as teacher model in the
+#'   causal distillation tree framework.
+#'
+#' @param rlearner_fun One of \code{rlearner::rboost},
+#'   \code{rlearner::rlasso}, or \code{rlearner::rkern} to be transformed to
+#'   teacher model format for CDT.
+#' @param ... Additional arguments to pass to the base model functions.
+#'
+#' @returns Outputs a function that can be used as teacher model in the
+#'   causal distillation tree framework. The returned function has the
+#'   signature \code{function(X, Y, Z, W = NULL, ...)}.
+#'
 #' @export
 rlearner_teacher <- function(rlearner_fun, ...) {
   teacher_fun <- function(X, Y, Z, W = NULL, ...) {
@@ -119,7 +152,7 @@ bcf <- function(X, Y, Z, W = NULL, pihat = "default", w = NULL,
   )
 }
 
-#' @rdname teacher_models
+#' @rdname predict_teacher_models
 #' @export
 predict_bcf <- function(...) {
   # predict(...)

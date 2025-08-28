@@ -146,16 +146,8 @@ NULL
 #' Y <- 2 * Z * (X[, 1] > 0) + X[, 2] + rnorm(n, 0.1)
 #'
 #' # causal distillation trees using causal forest teacher model
-#' \dontrun{
+#' \donttest{
 #' out <- causalDT(X, Y, Z)
-#' }
-#'
-#' \dontrun{
-#' # uncomment the following line to install rlearner package to use rboost
-#' # remotes::install_github("xnie/rlearner")
-#'
-#' # causal distillation trees using rboost teacher model
-#' out <- causalDT(X, Y, Z, teacher_model = rlearner_teacher(rlearner::rboost))
 #' }
 #'
 #' @export

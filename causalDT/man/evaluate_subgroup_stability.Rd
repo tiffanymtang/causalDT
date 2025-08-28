@@ -59,7 +59,7 @@ recommended to choose teacher models in CDT that result in the most stable
 subgroups, as indicated by high SSI values.
 }
 \examples{
-\dontrun{
+\donttest{
 n <- 200
 p <- 10
 X <- matrix(rnorm(n * p), nrow = n, ncol = p)

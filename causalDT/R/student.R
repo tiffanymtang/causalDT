@@ -115,7 +115,7 @@ student_rpart <- function(X, y, method = "anova", rpart_control = NULL,
 #' \item{.sample_idxs}{Indices of (holdout) observations in the subgroup.}
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' n <- 50
 #' p <- 3
 #' X <- matrix(rnorm(n * p), nrow = n, ncol = p)

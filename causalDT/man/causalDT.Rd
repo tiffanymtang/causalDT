@@ -162,17 +162,8 @@ Z <- rbinom(n, 1, 0.5)
 Y <- 2 * Z * (X[, 1] > 0) + X[, 2] + rnorm(n, 0.1)
 
 # causal distillation trees using causal forest teacher model
-\dontrun{
+\donttest{
 out <- causalDT(X, Y, Z)
-}
-
-\dontrun{
-# install and load rlearner package to use rboost, rlasso, and rkern
-# remotes::install_github("xnie/rlearner")
-# library(rlearner)
-
-# causal distillation trees using rboost teacher model
-out <- causalDT(X, Y, Z, teacher_model = rlearner_teacher(rlearner::rboost))
 }
 
 }

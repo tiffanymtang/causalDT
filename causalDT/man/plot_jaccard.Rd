@@ -21,16 +21,30 @@ appropriate teacher model in CDT, the Jaccard SSI can be used to select the
 teacher model that recovers the most stable subgroups.
 }
 \examples{
-\dontrun{
+\donttest{
 n <- 50
 p <- 2
 X <- matrix(rnorm(n * p), nrow = n, ncol = p)
 Z <- rbinom(n, 1, 0.5)
 Y <- 2 * Z * (X[, 1] > 0) + X[, 2] + rnorm(n, 0.1)
 
-cdt1 <- causalDT(X, Y, Z)
-cdt2 <- causalDT(X, Y, Z, teacher_model = rboost)
-plot_jaccard(`Causal Forest` = cdt1, `Rboost` = cdt2)
+# number of bootstraps for stability diagnostics (setting to small value for faster example)
+B <- 10
+
+# run CDT with default causal forest teacher model
+cdt1 <- causalDT(X, Y, Z, B_stability = B)
+
+# run CDT with custom BCF teacher model
+cdt2 <- causalDT(
+  X, Y, Z,
+  # set BCF training parameters to be small for faster example
+  teacher_model = purrr::partial(bcf, nsim = 100, nburn = 10),
+  teacher_predict = predict_bcf,
+  # set number of cross-fitting replications to be small for faster example
+  nreps_crossfit = 5,
+  B_stability = B
+)
+plot_jaccard(`Causal Forest` = cdt1, `BCF` = cdt2)
 }
 
 }

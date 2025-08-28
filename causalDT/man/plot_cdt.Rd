@@ -20,7 +20,7 @@ Visualize the subgroups (i.e., the student tree) from a causal
 distillation tree object.
 }
 \examples{
-\dontrun{
+\donttest{
 n <- 200
 p <- 10
 X <- matrix(rnorm(n * p), nrow = n, ncol = p)

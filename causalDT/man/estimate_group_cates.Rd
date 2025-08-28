@@ -40,7 +40,7 @@ between treated and control units that fall within each subgroup (i.e.,
 each leaf node in the decision tree).
 }
 \examples{
-\dontrun{
+\donttest{
 n <- 50
 p <- 3
 X <- matrix(rnorm(n * p), nrow = n, ncol = p)

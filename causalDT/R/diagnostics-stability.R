@@ -33,7 +33,7 @@
 #' @references Huang, M., Tang, T. M., and Kenney, A. M. (2025). Distilling heterogeneous treatment effects: Stable subgroup estimation in causal inference. *arXiv preprint arXiv:2502.07275*.
 #'
 #' @examples
-#' \dontrun{
+#' \donttest{
 #' n <- 200
 #' p <- 10
 #' X <- matrix(rnorm(n * p), nrow = n, ncol = p)
