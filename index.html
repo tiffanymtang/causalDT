@@ -114,7 +114,7 @@
 <span><span class="co"># selecting between causal forest versus rboost</span></span>
 <span><span class="va">rboost_cdt</span> <span class="op">&lt;-</span> <span class="fu"><a href="reference/causalDT.html">causalDT</a></span><span class="op">(</span></span>
 <span>  X <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/matrix.html" class="external-link">as.matrix</a></span><span class="op">(</span><span class="va">X</span><span class="op">)</span>, Y <span class="op">=</span> <span class="va">Y</span>, Z <span class="op">=</span> <span class="va">Z</span>,</span>
-<span>  teacher_model <span class="op">=</span> <span class="fu"><a href="reference/teacher_models.html">rlearner_teacher</a></span><span class="op">(</span><span class="fu">rlearner</span><span class="fu">::</span><span class="va"><a href="https://rdrr.io/pkg/rlearner/man/rboost.html" class="external-link">rboost</a></span><span class="op">)</span></span>
+<span>  teacher_model <span class="op">=</span> <span class="fu"><a href="reference/rlearner_teacher.html">rlearner_teacher</a></span><span class="op">(</span><span class="fu">rlearner</span><span class="fu">::</span><span class="va">rboost</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span><span class="fu"><a href="reference/plot_jaccard.html">plot_jaccard</a></span><span class="op">(</span>`Causal Forest` <span class="op">=</span> <span class="va">causal_forest_cdt</span>, `Rboost` <span class="op">=</span> <span class="va">rboost_cdt</span><span class="op">)</span></span></code></pre></div>
 <p><img src="reference/figures/README-jaccard-1.png"><!-- --></p>
