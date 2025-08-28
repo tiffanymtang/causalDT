@@ -27,6 +27,7 @@ bcf(
   nburn = 2000,
   nsim = 1000,
   n_threads = 1,
+  no_output = TRUE,
   ...
 )
 }
@@ -50,6 +51,8 @@ bcf(
 \item{nsim}{Number of MCMC iterations to save after burn-in. The chain will run for nsim*nthin iterations after burn-in}
 
 \item{n_threads}{An optional integer of the number of threads to parallelize within chain bcf operations on}
+
+\item{no_output}{logical, whether to suppress writing trees and training log to text files, defaults to FALSE.}
 }
 \value{
 Outputs of the respective base model functions:

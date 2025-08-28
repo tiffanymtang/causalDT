@@ -125,7 +125,8 @@ rkern <- function(X, Y, Z, W = NULL, ...) {
 #' @rdname teacher_models
 #' @export
 bcf <- function(X, Y, Z, W = NULL, pihat = "default", w = NULL,
-                nburn = 2000, nsim = 1000, n_threads = 1, ...) {
+                nburn = 2000, nsim = 1000, n_threads = 1, no_output = TRUE,
+                ...) {
   if (is.null(W)) {
     if (identical(pihat, "default")) {
       pihat_fit <- glm(Z ~ X, family = "binomial")
@@ -148,7 +149,7 @@ bcf <- function(X, Y, Z, W = NULL, pihat = "default", w = NULL,
   bcf::bcf(
     y = Y, z = Z, x_control = X, x_moderate = X_moderate,
     pihat = pihat, w = w, nburn = nburn, nsim = nsim, n_threads = n_threads,
-    ...
+    no_output = no_output, ...
   )
 }
 
