@@ -35,6 +35,7 @@ B <- 10
 cdt1 <- causalDT(X, Y, Z, B_stability = B)
 
 # run CDT with custom BCF teacher model
+sink(tempfile())  # to suppress printed output from BCF
 cdt2 <- causalDT(
   X, Y, Z,
   # set BCF training parameters to be small for faster example
@@ -44,6 +45,9 @@ cdt2 <- causalDT(
   nreps_crossfit = 5,
   B_stability = B
 )
+sink() # restore normal output
+
+# plot Jaccard SSI for both teacher models (note: in practice, use larger B)
 plot_jaccard(`Causal Forest` = cdt1, `BCF` = cdt2)
 }
 
