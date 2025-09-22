@@ -6,3 +6,6 @@
 .DS_Store
 causalDT-manuscript/results/*
 causalDT-manuscript/results_old/*
+
+causalDT.Rcheck/*
+*.tar.gz

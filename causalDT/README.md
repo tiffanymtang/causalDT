@@ -31,7 +31,13 @@ in causal inference.” (2025).](https://arxiv.org/abs/2502.07275)
 
 ## Installation of the R package
 
-You can install the `causalDT` R package via:
+You can install the `causalDT` R package from CRAN via:
+
+``` r
+install.packages("causalDT")
+```
+
+or the latest developmental version from GitHub via:
 
 ``` r
 # install.packages("devtools")
@@ -84,6 +90,7 @@ and the response variable $Y$, we can run CDT as follows:
 
 ``` r
 library(causalDT)
+#> Warning: package 'causalDT' was built under R version 4.4.1
 
 set.seed(331)
 causal_forest_cdt <- causalDT(
