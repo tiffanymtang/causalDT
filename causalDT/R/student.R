@@ -145,7 +145,7 @@ estimate_group_cates <- function(fit, X, Y, Z) {
       error = function(e) as.numeric(as.factor(predict(fit, data.frame(X))))
     )
   } else {
-    leaf_ids <- NULL
+    leaf_ids <- rep(1, nrow(X))
   }
   group_cates <- tibble::tibble(
     Z = Z,
