@@ -120,16 +120,6 @@ evaluate_subgroup_stability <- function(estimator, fit, X, y, Z = NULL,
   preds_mean <- list()
   preds_var <- list()
   for (n_depth in 1:max_depth) {
-    # if (any(node_depths_orig > n_depth)) {
-    #   fit_orig_pruned <- partykit::nodeprune(
-    #     fit_orig, ids = names(node_depths_orig)[node_depths_orig == n_depth]
-    #   )
-    # } else {
-    #   fit_orig_pruned <- fit_orig
-    # }
-    # node_depths_orig_pruned <- get_party_node_depths(fit_orig_pruned)
-    # leaf_ids_orig <- predict(fit_orig_pruned, data.frame(X), type = "node")
-
     bootstrap_leaf_ids <- purrr::map2(
       bootstrap_fits, node_depths,
       function(fit_b, node_depths_b) {

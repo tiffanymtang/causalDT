@@ -146,21 +146,11 @@ bcf <- function(X, Y, Z, W = NULL, pihat = "default", w = NULL,
   } else {
     X_moderate <- X
   }
-  if (no_output) {
-    logged_output <- capture.output(
-      fit <- bcf::bcf(
-        y = Y, z = Z, x_control = X, x_moderate = X_moderate,
-        pihat = pihat, w = w, nburn = nburn, nsim = nsim, n_threads = n_threads,
-        no_output = no_output, ...
-      )
-    )
-  } else {
-    fit <- bcf::bcf(
-      y = Y, z = Z, x_control = X, x_moderate = X_moderate,
-      pihat = pihat, w = w, nburn = nburn, nsim = nsim, n_threads = n_threads,
-      no_output = no_output, ...
-    )
-  }
+  fit <- bcf::bcf(
+    y = Y, z = Z, x_control = X, x_moderate = X_moderate,
+    pihat = pihat, w = w, nburn = nburn, nsim = nsim, n_threads = n_threads,
+    no_output = no_output, ...
+  )
   return(fit)
 }
 
