@@ -1,6 +1,8 @@
 #include <Rcpp.h>
 using namespace Rcpp;
 
+// [[Rcpp::depends(RcppArmadillo)]]
+
 //' Jaccard subgroup similarity index
 //'
 //' @description
@@ -8,13 +10,16 @@ using namespace Rcpp;
 //' subgroup membership labels, scaling it such that each leaf node contributes
 //' equal weight to the overall similarity.
 //'
-//' @param x Numeric vector of subgroup memberships (encoded as integers).
-//' @param y Numeric vector of subgroup memberships (encoded as integers).
+//' @param x Numeric vector of subgroup memberships. Must be encoded as 
+//'   integers, beginning at 0 and be contiguous (i.e., if there are k unique 
+//'   values, they must be 0, 1, ..., k-1).
+//' @param y Numeric vector of subgroup memberships Must be encoded as 
+//'   integers, beginning at 0 and be contiguous (i.e., if there are k unique 
+//'   values, they must be 0, 1, ..., k-1).
 //'
 //' @return Computed Jaccard subgroup similarity metric
 //'
 //' @export
-// [[Rcpp::depends(RcppArmadillo)]]
 // [[Rcpp::export]]
 double jaccardSSI(NumericVector x, NumericVector y) {
   // length of x vector; number of samples
