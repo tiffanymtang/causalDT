@@ -12,6 +12,8 @@
   : Get decision paths from an rpart model.
 - [`get_rpart_tree_info()`](https://tiffanymtang.github.io/causalDT/reference/get_rpart_tree_info.md)
   : Get split information from an rpart model.
+- [`jaccardSSI()`](https://tiffanymtang.github.io/causalDT/reference/jaccardSSI.md)
+  : Jaccard subgroup similarity index
 - [`plot_cdt()`](https://tiffanymtang.github.io/causalDT/reference/plot_cdt.md)
   : Plot causal distillation tree object
 - [`plot_jaccard()`](https://tiffanymtang.github.io/causalDT/reference/plot_jaccard.md)
