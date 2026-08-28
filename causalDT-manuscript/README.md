@@ -52,12 +52,10 @@ are recommended:
 renv::restore()
 ```
 
-4.  Run each of the simulation driver scripts in the `meals/` directory.
-5.  Render all of the results into a single summary `simChef`
-    documentation by running the `meals/00_render_docs.R` script.
-
-These steps will generate all of the figures and results from the
-mansucript. The rendered `simChef` documentation can be found [here](https://tiffanymtang.github.io/causalDT/simulation_results.html).
+4.  Run each of the simulations in the `meals/` directory (see
+    `job_scripts/driver_simulations.sh`).
+5.  Reproduce all of the figures from the manuscript by running
+    `notebooks/paper_figures.Rmd`.
 
 ## Citation
 

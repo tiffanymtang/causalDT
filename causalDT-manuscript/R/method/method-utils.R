@@ -3,8 +3,7 @@ dummy_code <- function(data, fullRank = FALSE) {
     return(data)
   }
   data <- data |>
-    droplevels() |>
-    drop_constant_columns()
+    droplevels()
   nonnumeric_cols <- sapply(data, class) %in% c("factor", "character")
   if (any(nonnumeric_cols)) {
     nonnumeric_colnames <- colnames(data)[nonnumeric_cols]
@@ -215,4 +214,15 @@ unnest_fit_results <- function(fit_results) {
 
   fit_results <- dplyr::bind_rows(tree_fit_results, nontree_fit_results)
   return(fit_results)
+}
+
+
+get_partykit_parent_id <- function(tree, node_id) {
+  flat_nodes <- as.list(tree$node)
+  for (node in flat_nodes) {
+    if (!is.null(node$kids) && node_id %in% node$kids) {
+      return(node$id)
+    }
+  }
+  return(NA)
 }

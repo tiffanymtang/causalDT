@@ -3,11 +3,17 @@ method_levels <- c(
   "Distilled Rboost (unpruned)",
   "Distilled Causal Forest",
   "Distilled Causal Forest (unpruned)",
+  "Distilled Rlasso",
+  "Distilled Rlasso (unpruned)",
+  "Distilled Rspline",
+  "Distilled Rspline (unpruned)",
   "Distilled BCF",
   "Distilled BCF (unpruned)",
   "Virtual Twins",
   "Causal Tree",
   "Causal Tree (unpruned)",
+  "Causal Tree (cp = 1E-4)",
+  "Causal Tree (cp = 1E-4) (unpruned)",
   "Linear Regression",
   "Lasso",
   "CART",
@@ -24,9 +30,15 @@ COLORS <- c(
   "Distilled Causal Forest (unpruned)" = "#1f5d8f",
   "Distilled BCF" = "#1c3145",
   "Distilled BCF (unpruned)" = "#1c3145",
+  "Distilled Rlasso" = "#916A5D",
+  "Distilled Rlasso (unpruned)" = "#916A5D",
+  "Distilled Rspline" = "#93ACBF",
+  "Distilled Rspline (unpruned)" = "#93ACBF",
   "Virtual Twins" = "#768c50",
   "Causal Tree" = "#953a2f",
   "Causal Tree (unpruned)" = "#953a2f",
+  "Causal Tree (cp = 1E-4)" = "#953a2f",
+  "Causal Tree (cp = 1E-4) (unpruned)" = "#953a2f",
   "Linear Regression" = "#b2954a",
   "Lasso" = "#D2BE90",
   "CART" = "#1f5d8f",
@@ -42,9 +54,15 @@ LINETYPES <- c(
   "Distilled Causal Forest (unpruned)" = "dashed",
   "Distilled BCF" = "solid",
   "Distilled BCF (unpruned)" = "dashed",
+  "Distilled Rlasso" = "solid",
+  "Distilled Rlasso (unpruned)" = "dashed",
+  "Distilled Rspline" = "solid",
+  "Distilled Rspline (unpruned)" = "dashed",
   "Virtual Twins" = "solid",
   "Causal Tree" = "solid",
   "Causal Tree (unpruned)" = "dashed",
+  "Causal Tree (cp = 1E-4)" = "solid",
+  "Causal Tree (cp = 1E-4) (unpruned)" = "dashed",
   "Linear Regression" = "solid",
   "Lasso" = "solid",
   "CART" = "solid",
@@ -58,6 +76,8 @@ COLORS2 <- COLORS
 COLORS2["Distilled Causal Forest (unpruned)"] <- "#96aac6"
 COLORS2["Distilled Rboost (unpruned)"] <- "#bad6f2"
 COLORS2["Distilled BCF (unpruned)"] <- "#d6d9dd"
+COLORS2["Distilled Rlasso (unpruned)"] <- "#BFA49B"
+COLORS2["Distilled Rspline (unpruned)"] <- "#D2DDE5"
 COLORS2["Causal Tree (unpruned)"] <- "#d09a90"
 
 CROSSFIT_COLORS <- c(

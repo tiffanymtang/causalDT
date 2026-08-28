@@ -4,9 +4,12 @@ experiment <- create_experiment(
   ### distillation methods
   add_method(distilled_causal_forest_stability_pruned_method) |>
   add_method(distilled_rboost_stability_pruned_method) |>
+  add_method(distilled_rlasso_stability_pruned_method) |>
+  add_method(distilled_rspline_stability_pruned_method) |>
   add_method(distilled_bcf_stability_pruned_method) |>
   ### baseline causal tree methods
   add_method(causal_tree_stability_pruned_method) |>
+  add_method(causal_tree_oracle_stability_pruned_method) |>
   ### other existing methods
   add_method(virtual_twins_method) |>
   add_method(lm_method) |>
@@ -58,8 +61,6 @@ rulefit_experiment <- create_experiment(
 crossfit_experiment <- create_experiment(
   name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results", EXP_NAME)
 ) |>
-  ### distillation methods without crossfit
-  add_method(distilled_rboost_no_crossfit_method) |>
   ### distillation methods with crossfitting
   add_method(distilled_rboost_crossfit_method) |>
   add_vary_across(
@@ -82,7 +83,6 @@ rwd_experiment <- create_experiment(
   ### distillation methods
   add_method(distilled_causal_forest_stability_pruned_method) |>
   add_method(distilled_rboost_stability_pruned_method) |>
-  add_method(distilled_bcf_stability_pruned_method) |>
   ### baseline causal tree methods
   add_method(causal_tree_stability_pruned_method) |>
   ### other existing methods
@@ -101,7 +101,7 @@ example_experiment <- create_experiment(
   name = EXP_NAME, save_dir = file.path(SAVE_DIR, "results", EXP_NAME)
 ) |>
   add_method(distilled_causal_forest_method) |>
-  add_method(distilled_bcf_method) |>
+  add_method(distilled_rboost_method) |>
   add_method(causal_tree_method) |>
   add_evaluator(subgroup_feature_selection_errors_summary) |>
   add_visualizer(num_subgroups_plot)

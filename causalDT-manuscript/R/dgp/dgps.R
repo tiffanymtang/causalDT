@@ -63,13 +63,18 @@ generate_subgroup_dgp <- function(n = 2000,
 
 
 # Real world data
-rwd_dgp <- function(name, subsample = 1, permute = FALSE) {
+rwd_dgp <- function(name, subsample = 1, replace = FALSE, permute = FALSE) {
 
   if (stringr::str_starts(name, "aids")) {
     data <- speff2trial::ACTG175 |>
       dplyr::filter(arms %in% c(0, 2))
     if (subsample < 1) {
-      subsample_idx <- sample(1:nrow(data), floor(nrow(data) * subsample))
+      subsample_idx <- sample(
+        1:nrow(data), floor(nrow(data) * subsample), replace = replace
+      )
+      data <- data[subsample_idx, , drop = FALSE]
+    } else if ((subsample == 1) && (replace)) {
+      subsample_idx <- sample(1:nrow(data), nrow(data), replace = replace)
       data <- data[subsample_idx, , drop = FALSE]
     }
     vars_all <- c(

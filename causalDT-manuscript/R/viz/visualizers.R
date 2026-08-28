@@ -222,15 +222,24 @@ plot_subgroup_thresholds <- function(fit_results = NULL,
         )
     }
     if (length(unique(plt_df[[feature_col]])) == 1) {
-      plt <- plt +
-        ggplot2::facet_grid(
-          cols = ggplot2::vars(!!rlang::sym(vary_params[1])),
-          rows = ggplot2::vars(
-            !!rlang::sym(vary_params[2]),
-            .dgp_name
-          ),
-          scales = "free_y"
-        )
+      if (length(vary_params) == 2) {
+        plt <- plt +
+          ggplot2::facet_grid(
+            cols = ggplot2::vars(!!rlang::sym(vary_params[1])),
+            rows = ggplot2::vars(
+              !!rlang::sym(vary_params[2]),
+              .dgp_name
+            ),
+            scales = "free_y"
+          )
+      } else {
+        plt <- plt +
+          ggplot2::facet_grid(
+            cols = ggplot2::vars(!!rlang::sym(vary_params[1])),
+            rows = ggplot2::vars(.dgp_name),
+            scales = "free_y"
+          )
+      }
     } else {
       if (is.null(vary_params)) {
         plt <- plt +
@@ -475,10 +484,18 @@ plot_stability_diagnostics <- function(fit_results,
     dplyr::mutate(
       jaccard = purrr::map(
         stability_diagnostics,
-        ~ tibble::tibble(
-          depth = 1:length(.x$jaccard_mean),
-          jaccard = .x$jaccard_mean
-        )
+        function(.x) {
+          if (!is.null(.x)) {
+            return(
+              tibble::tibble(
+                depth = 1:length(.x$jaccard_mean),
+                jaccard = .x$jaccard_mean
+              )
+            )
+          } else {
+            return(NULL)
+          }
+        }
       )
     ) |>
     dplyr::select(

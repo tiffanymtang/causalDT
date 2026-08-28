@@ -10,10 +10,11 @@ causalDT_method <- function(X, Y, Z,
                             nfolds_crossfit = NULL,
                             nreps_crossfit = NULL,
                             B_stability = 0,
-                            max_depth_stability = NULL,
+                            max_depth_stability = 4,
                             causalDT_args = NULL,
                             return_details = FALSE,
                             return_permuted_results = FALSE,
+                            return_data = FALSE,
                             ...) {
 
   rpart_prune <- match.arg(rpart_prune, several.ok = TRUE)
@@ -68,7 +69,12 @@ causalDT_method <- function(X, Y, Z,
     for (rpart_prune_mode in rpart_prune) {
       fit <- results$student_fit$fit
       if (is.null(fit)) {
-        return(NULL)
+        fit_ls[[rpart_prune_mode]] <- NULL
+        subgroups_ls[[rpart_prune_mode]] <- NULL
+        tree_info_ls[[rpart_prune_mode]] <- NULL
+        predictions_ls[[rpart_prune_mode]] <- NULL
+        group_cates_ls[[rpart_prune_mode]] <- NULL
+        next
       } else if (rpart_prune_mode != "none") {
         best_cp <- as.data.frame(fit$cptable) |>
           dplyr::filter(xerror == min(xerror, na.rm = TRUE)) |>
@@ -104,6 +110,58 @@ causalDT_method <- function(X, Y, Z,
       )
     } else {
       group_cates_ls[[rpart_prune[1]]] <- results$estimate
+    }
+  }
+  for (rpart_prune_mode in names(group_cates_ls)) {
+    group_cates <- group_cates_ls[[rpart_prune_mode]]
+    # check there are both treated and control units in each subgroup for subgroup ATE estimation
+    if (!is.null(group_cates) && (".n1" %in% colnames(group_cates))) {
+      empty_subgroups <- group_cates |>
+        dplyr::filter((.n1 == 0) | (.n0 == 0)) |>
+        dplyr::pull(leaf_id)
+      empty_subgroups_flag <- length(empty_subgroups) > 0
+      fit <- fit_ls[[rpart_prune_mode]]
+      if (!is.null(fit)) {
+        fit <- partykit::as.party(fit)
+      }
+      while (empty_subgroups_flag) {
+        parent_ids <- purrr::map_dbl(
+          empty_subgroups, ~ get_partykit_parent_id(fit, .x)
+        ) |>
+          unique()
+        fit <- partykit::nodeprune(fit, ids = parent_ids)
+        leaf_ids <- tryCatch(
+          predict(fit, data.frame(X_est), type = 'node'),
+          error = function(e) as.numeric(as.factor(predict(fit, data.frame(X_est))))
+        )
+        group_cates <- tibble::tibble(
+          Z = Z_est,
+          Y = Y_est,
+          leaf_id = leaf_ids
+        ) |>
+          dplyr::group_by(dplyr::across(tidyselect::any_of("leaf_id"))) |>
+          dplyr::summarise(
+            estimate = mean(Y[Z == 1]) - mean(Y[Z == 0]),
+            variance = 1 / sum(Z == 1) * var(Y[Z == 1]) +
+              1 / sum(Z == 0) * var(Y[Z == 0]),
+            .var1 = var(Y[Z == 1]),
+            .var0 = var(Y[Z == 0]),
+            .n1 = sum(Z == 1),
+            .n0 = sum(Z == 0),
+            .sample_idxs = list(dplyr::cur_group_rows()),
+            .groups = "drop"
+          )
+        group_cates <- dplyr::left_join(
+          causalDT:::get_party_paths(fit),
+          group_cates,
+          by = "leaf_id"
+        )
+        empty_subgroups <- group_cates |>
+          dplyr::filter((.n1 == 0) | (.n0 == 0)) |>
+          dplyr::pull(leaf_id)
+        empty_subgroups_flag <- length(empty_subgroups) > 0
+        group_cates_ls[[rpart_prune_mode]] <- group_cates
+      }
     }
   }
   end_time <- Sys.time()
@@ -159,6 +217,12 @@ causalDT_method <- function(X, Y, Z,
     ),
     detailed_out
   )
+  if (return_data) {
+    out$X <- X
+    out$Y <- Y
+    out$Z <- Z
+  }
+
   return(out)
 }
 
@@ -273,7 +337,7 @@ causal_tree <- function(X, Y, Z,
                           propensity = 0.5
                         ),
                         B_stability = 0,
-                        max_depth_stability = NULL,
+                        max_depth_stability = 4,
                         return_details = FALSE,
                         ...) {
 
@@ -378,11 +442,21 @@ causal_tree <- function(X, Y, Z,
 
 
 linear_reg_subgroups <- function(X, Y, Z, max_int = 1,
+                                 train_prop = 1,
                                  return_details = FALSE,
                                  ...) {
 
   start_time <- Sys.time()
   X <- dummy_code(X, fullRank = TRUE)
+
+  if (train_prop < 1) {
+    train_idx <- sample(
+      1:nrow(X), size = nrow(X) * train_prop, replace = FALSE
+    )
+    X <- X[train_idx, , drop = FALSE]
+    Y <- Y[train_idx]
+    Z <- Z[train_idx]
+  }
 
   # Step 1: Fit a linear regression
   df <- data.frame(X, Z, Y)
@@ -432,10 +506,20 @@ linear_reg_subgroups <- function(X, Y, Z, max_int = 1,
 lasso_reg_subgroups <- function(X, Y, Z, max_int = 1,
                                 glmnet_args = list(nfolds = 5),
                                 return_details = FALSE,
+                                train_prop = 1,
                                 ...) {
 
   start_time <- Sys.time()
   X <- dummy_code(X, fullRank = TRUE)
+
+  if (train_prop < 1) {
+    train_idx <- sample(
+      1:nrow(X), size = nrow(X) * train_prop, replace = FALSE
+    )
+    X <- X[train_idx, , drop = FALSE]
+    Y <- Y[train_idx]
+    Z <- Z[train_idx]
+  }
 
   # Step 1: Fit Lasso
   df <- data.frame(X, Z, Y)

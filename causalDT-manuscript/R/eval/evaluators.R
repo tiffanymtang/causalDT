@@ -19,7 +19,11 @@ eval_subgroup_feature_selection_err <- function(fit_results,
   fit_results <- unnest_fit_results(fit_results = fit_results)
 
   subgroup_feature_selection_err <- function(data) {
-    true_vars <- names(data[["true_thresholds"]][[1]])
+    if (length(unlist(data[["true_thresholds"]])) == 1) {
+      true_vars <- names(data[["true_thresholds"]])
+    } else {
+      true_vars <- names(data[["true_thresholds"]][[1]])
+    }
     model_info <- data[["model_info"]][[1]]
     nsubgroups <- length(data[["subgroups"]][[1]])
     if (("node" %in% colnames(model_info)) && !is.null(max_depth)) {
@@ -29,17 +33,21 @@ eval_subgroup_feature_selection_err <- function(fit_results,
         )
     }
 
-    if (is.null(model_info)) {
+    if (is.null(model_info) || isTRUE(is.na(model_info))) {
       tp <- 0
       fp <- 0
       fn <- length(true_vars)
       f1 <- 0
+      nsubgroups <- 1
     } else {
       subgroup_vars <- unique(collapse_dummy_vars(model_info$var))
       tp <- sum(subgroup_vars %in% true_vars)
       fp <- sum(!(subgroup_vars %in% true_vars))
       fn <- sum(!(true_vars %in% subgroup_vars))
       f1 <-  (2 * tp) / (2 * tp + fp + fn)
+      if ((tp == 0) && (fp == 0)) {
+        nsubgroups <- 1
+      }
     }
     return(
       tibble::tibble(
@@ -114,6 +122,7 @@ eval_subgroup_thresholds <- function(fit_results,
       true_vars <- names(data[["true_thresholds"]][[1]])
     }
     if (is.null(model_info) ||
+        isTRUE(is.na(model_info)) ||
         identical(model_info, list()) ||
         isTRUE(nrow(model_info) == 0)) {
       return(NULL)
@@ -155,7 +164,9 @@ eval_subgroup_thresholds <- function(fit_results,
     tidyr::unnest(.eval_result) |>
     dplyr::group_by(dplyr::across(tidyselect::any_of(group_vars)))
 
-  if (!is.null(summary_funs) || !is.null(custom_summary_funs)) {
+  if (nrow(eval_data) == 0) {
+    return(eval_data)
+  } else if (!is.null(summary_funs) || !is.null(custom_summary_funs)) {
     n_splits_eval_summary <- eval_data |>
       simChef::eval_summarizer(
         eval_id = "n_splits", value_col = "n_splits",
@@ -245,7 +256,10 @@ eval_subgroup_threshold_dist <- function(fit_results,
       true_thrs <- data[["true_thresholds"]][[1]]
     }
     true_vars <- names(true_thrs)
-    if (is.null(model_info) || (nrow(model_info) == 0)) {
+    if (is.null(model_info) ||
+        isTRUE(is.na(model_info)) ||
+        identical(model_info, list()) ||
+        isTRUE(nrow(model_info) == 0)) {
       return(NULL)
     }
     subgroup_thresholds <- model_info |>
@@ -291,6 +305,9 @@ eval_subgroup_threshold_dist <- function(fit_results,
   ) |>
     tidyr::unnest(.eval_result) |>
     dplyr::group_by(dplyr::across(tidyselect::any_of(group_vars)))
+  if (nrow(eval_data) == 0) {
+    return(eval_data)
+  }
 
   eval_summary <- simChef::eval_summarizer(
     eval_data = eval_data, eval_id = eval_id, value_col = "thr_dist",
@@ -325,13 +342,24 @@ eval_subgroup_ate_err <- function(fit_results,
     tau <- data[["tau_denoised"]][[1]]
     group_cates <- data[["group_cates"]][[1]]
     if (is.null(group_cates)) {
-      return(NULL)
-    }
-    if (!is.null(max_depth)) {
+      Y_est <- data[["est_data"]][[1]][["Y"]]
+      Z_est <- data[["est_data"]][[1]][["Z"]]
+      ate <- mean(Y_est[Z_est == 1]) - mean(Y_est[Z_est == 0])
+      if (!is.null(holdout_idxs)) {
+        tau <- tau[holdout_idxs]
+      }
+      df <- tibble::tibble(truth = tau, estimate = rep(ate, length(tau)))
+    } else if (!is.null(max_depth)) {
       fit <- data[["fit"]][[1]]
       method_name <- data[[".method_name"]][[1]]
       if (!("rpart" %in% class(fit))) {
-        return(NULL)
+        Y_est <- data[["est_data"]][[1]][["Y"]]
+        Z_est <- data[["est_data"]][[1]][["Z"]]
+        ate <- mean(Y_est[Z_est == 1]) - mean(Y_est[Z_est == 0])
+        if (!is.null(holdout_idxs)) {
+          tau <- tau[holdout_idxs]
+        }
+        df <- tibble::tibble(truth = tau, estimate = rep(ate, length(tau)))
       } else {
         party_fit <- partykit::as.party(fit)
         node_depths <- causalDT:::get_party_node_depths(party_fit)
